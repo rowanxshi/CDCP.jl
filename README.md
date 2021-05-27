@@ -35,6 +35,7 @@ There are two optional arguments: the marginal value function `D_j_π(j, J)` and
 The `containers = (working, converged)` can be preallocated and passed to the solver. Both `working` and `converged` are both `Vectors` holding elements like `(sub, sup, aux)`. These are used for the branching step and will be automatically allocated if not supplied.
 
 > **Examples**
+>
 > Suppose we have the objective function `π(J::BitVector)` and marginal value function `D_j_π(j::Integer, J::BitVector)` already defined and that the CDCP is over `C` items. We can preallocate everything, then call the solver as follows.
 > ``
 > sub = falses(C)
@@ -43,10 +44,10 @@ The `containers = (working, converged)` can be preallocated and passed to the so
 > working = [(sub, sup, aux); ]
 > converged = similar(working)
 >
-> # if the objective obeys SCD-C from above
+> &#35; if the objective obeys SCD-C from above
 > solve!((sub, sup, aux), π, D_j_π, true, containers = (working, converged)) 
 >
-> # if the objective obeys SCD-C from below
+> &#35; if the objective obeys SCD-C from below
 > solve!((sub, sup, aux), π, D_j_π, false, containers = (working, converged)) 
 > ``
 > We could equally call the solver omitting the preallocated containers, the marginal value function, or both:
@@ -81,12 +82,13 @@ A function `zero_D_j_π(j, J)` may optionally be provided, which accepts an inde
 The policy function will be returned as a series of cutoff _productivities_ and the optimal decision sets for all types within each interval.
 
 > **Examples**
+>
 > Suppose we have our three functions `π(J::BitVector, z::Float64)`, `zero_D_j_π(j::Integer, J::BitVector)` and `equalise_π((J1, J2))` defined. The CDCP is over `C = 3` items. We can call the solver as follows.
 > ``
-> # if the objective obeys SCD-C from above
+> &#35; if the objective obeys SCD-C from above
 > (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, true)
 >
-> # if the objective obeys SCD-C from below
+> &#35; if the objective obeys SCD-C from below
 > (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, false)
 > ``
 > We could equally omit the `zero_D_j_π` function, letting the solver generate one itself:
