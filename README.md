@@ -25,10 +25,10 @@ The package provides `solve!`, `solve`, and `policy`.
 
 Either `solve!` or `solve` can handle single agent problems. The first solves the problem inplace, so it should be provided with three pre-allocated Boolean vectors `(sub, sup, aux)`, the objective function `π`, and whether the problem satisfies SCD-C from above.
 
-``
+```
 solve!((sub, sup, aux), π, D_j_π, scdca::Bool; containers)
 solve!((sub, sup, aux), π, scdca::Bool; containers)
-``
+```
 
 The solver expects the objective function `π(J)` to accept a Boolean vector like `sub`.
 
