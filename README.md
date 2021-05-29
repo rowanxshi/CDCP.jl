@@ -6,13 +6,13 @@ A Julia package to solve [combinatorial discrete choice problems](https://rowanx
 
 From command line:
 
-```
+```julia
 julia -e 'using Pkg; Pkg.add(url="https://github.com/rowanxshi/CDCP.jl")
 ```
 
 From within Julia:
 
-```
+```julia
 import Pkg
 Pkg.add(url="https://github.com/rowanxshi/CDCP.jl")
 ```
@@ -25,7 +25,7 @@ The package provides `solve!`, `solve`, and `policy`.
 
 Either `solve!` or `solve` can handle single agent problems. The first solves the problem inplace, so it should be provided with three pre-allocated Boolean vectors `(sub, sup, aux)`, the objective function `π`, and whether the problem satisfies SCD-C from above.
 
-```
+```julia
 solve!((sub, sup, aux), π, D_j_π, scdca::Bool; containers)
 solve!((sub, sup, aux), π, scdca::Bool; containers)
 ```
@@ -40,7 +40,7 @@ The `containers = (working, converged)` can be preallocated and passed to the so
 >
 > Suppose we have the objective function `π(J::BitVector)` and marginal value function `D_j_π(j::Integer, J::BitVector)` already defined and that the CDCP is over `C` items. We can preallocate everything, then call the solver as follows.
 >
-> ```
+> ```julia
 > sub = falses(C)
 > sup = trues(C)
 > aux = falses(C)
@@ -50,19 +50,19 @@ The `containers = (working, converged)` can be preallocated and passed to the so
 >
 > If the objective obeys SCD-C from above:
 >
-> ```
+> ```julia
 > solve!((sub, sup, aux), π, D_j_π, true, containers = (working, converged)) 
 > ```
 >
 > If the objective obeys SCD-C from below:
 >
-> ```
+> ```julia
 > solve!((sub, sup, aux), π, D_j_π, false, containers = (working, converged)) 
 > ```
 >
 > We could equally call the solver omitting the preallocated containers, the marginal value function, or both:
 >
-> ```
+> ```julia
 > solve!((sub, sup, aux), π, D_j_π, true)
 > solve!((sub, sup, aux), π, true, containers = (working, converged)) 
 > solve!((sub, sup, aux), π, true)
@@ -70,7 +70,7 @@ The `containers = (working, converged)` can be preallocated and passed to the so
 
 Pre-allocating is helpful if the problem will be solved many times because it avoids the solver allocating the vectors each time.
 
-```
+```julia
 solve(C::Integer, π, D_j_π, scdca::Bool; containers)
 solve(C::Integer, π, scdca::Bool; containers)
 ```
@@ -81,7 +81,7 @@ Non-inplace versions, where `C` is the number of items in the CDCP. ( `C` need n
 
 The package provides `policy` to identify the policy function for problems over a single dimension of heterogeneity (which we call _productivity_ from here).
 
-```
+```julia
 policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool)
 policy(C::Integer, π, equalise_π, scdca::Bool)
 ```
@@ -97,24 +97,24 @@ The policy function will be returned as a series of cutoff _productivities_ and 
 > Suppose we have our three functions `π(J::BitVector, z::Float64)`, `zero_D_j_π(j::Integer, J::BitVector)` and `equalise_π((J1, J2))` defined. The CDCP is over `C = 3` items. We can call the solver as follows.
 >
 > If the objective obeys SCD-C from above:
-> ```
+> ```julia
 > (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, true)
 > ```
 >
 > If the objective obeys SCD-C from below
-> ```
+> ```julia
 > (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, false)
 > ```
 >
 > We could equally omit the `zero_D_j_π` function, letting the solver generate one itself:
 >
-> ```
+> ```julia
 > (cutoffs, policies) = policy(3, π, equalise_π, false)
 > ```
 >
 > The returned returned `cutoffs` will be a vector of cutoffs; say `cutoffs = [-Inf, 2, 4, 6, Inf]`. The returned `policies` will be a vector of Boolean arrays, say
 >
-> ```
+> ```julia
 > [
 > 	[false; false; false];
 > 	[false; false; true];
