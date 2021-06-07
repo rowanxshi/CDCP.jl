@@ -35,7 +35,13 @@ function brute((working, converged, done), π, equalise_π, scdca::Bool)
 			
 			# for each subinterval, evaluate at midpoint and find best
 			for nn in 1:(length(within_endpoints)-1)
-				z = (within_endpoints[nn] + within_endpoints[nn+1])/2
+				z = if isinf(within_endpoints[nn])
+					within_endpoints[nn+1] - one(within_endpoints[nn+1])
+				elseif isinf(within_endpoints[nn+1])
+					within_endpoints[nn] + one(within_endpoints[nn])
+				else
+					(within_endpoints[nn] + within_endpoints[nn+1])/2
+				end
 				max_π = -Inf
 				i_max = 0
 				for (i_option, option) in enumerate(working)
