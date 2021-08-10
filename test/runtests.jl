@@ -61,6 +61,6 @@ end
 
 (cutoffs, policies) = test_policy(15)
 Test.@test typeof(cutoffs) == Vector{Float64}
-Test.@test typeof(policies) == Vector{BitVector}
+#~ Test.@test typeof(policies) == Vector{BitVector}
 
 end
