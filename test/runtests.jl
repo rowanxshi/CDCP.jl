@@ -59,11 +59,17 @@ function test_policy(C::Integer = 5, scdca::Bool = true)
 	var = rand(C)
     π_params = (C, var, scdca)
 	
-	CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
+    e, f = CDCP.policy(C, (J, z) -> π(J, z, π_params), (j, J) -> zero_D_j_π(j, J, π_params), pair -> equalise_π(pair, π_params), scdca)
+    g, h = CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
+    
+    return e, f, g, h
 end
 
-(cutoffs, policies) = test_policy(15)
-Test.@test typeof(cutoffs) == Vector{Float64}
-Test.@test typeof(policies) == Vector{BitVector}
+(e, f, g, h) = test_policy(15)
+Test.@test f == h
+Test.@test e ≈ g
+
+Test.@test typeof(f) == Vector{Float64}
+Test.@test typeof(g) == Vector{BitVector}
 
 end
