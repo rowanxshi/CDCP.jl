@@ -5,6 +5,8 @@
 Solve in-place a combinatorial discrete choice problem with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the preallocated Boolean vectors `(sub, sup, aux)` as well as the objective function `π(J)`. The objective function `π` must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
 
 The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value function; otherwise it will construct one automatically given `π`. It may also optionally take preallocated `containers = (working, converged)`, where `working` and `converged` are both `Vectors` with element type matching `(sub, sup, aux)`. These are used for the branching step and will be automatically allocated if not supplied.
+
+See also: [`solve`](@ref), [`policy](@ref)
 """
 function solve!((sub, sup, aux)::NTuple{3, Any}, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
 	fill!(sub, false)
