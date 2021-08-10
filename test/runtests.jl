@@ -44,21 +44,13 @@ function test_single(C::Integer = 5, z::T = 1.; scdca::Bool = true) where T <: R
 	c = CDCP.solve(C, J -> π(J, z, π_params), scdca)
 	d = CDCP.solve(C, J -> π(J, z, π_params), scdca, containers = (working, converged))
     
-    VV = falses(3*C)
-    sub = @view VV[1:C]
-    sup = @view VV[C+1:2C]
-    aux = @view VV[2C+1:end]
-    
-    e = CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca)
-    
-    return a, b, c, d, e
+    return a, b, c, d
 end
 
 (a, b, c, d, e) = test_single(5)
 Test.@test a == b
 Test.@test a == c
 Test.@test a == d
-Test.@test a == e
 Test.@test typeof(a) <: AbstractVector{Bool}
 
 function test_policy(C::Integer = 5, scdca::Bool = true)
