@@ -1,12 +1,12 @@
 import Test, Random, CDCP
 
-function π(J::BitVector, z::Float64, (C, var, scdca)::Tuple{Int, Vector{Float64}, Bool})
+function π(J::V, z::Float64, (C, var, scdca)::Tuple{Int, Vector{Float64}, Bool}) where V <: AbstractArray{Bool}
     δ = scdca ? 0.25 : 1.1
     f = range(0.1, length = C, step = 0.1)
     
     profits = z*sum(c -> J[c]*var[c], 1:C)^δ - sum(c -> J[c]*f[c], 1:C)
 end
-function zero_D_j_π(j::Integer, J::AbstractVector{Bool}, (C, var, scdca)::Tuple{Int, Vector{Float64}, Bool})
+function zero_D_j_π(j::Integer, J::V, (C, var, scdca)::Tuple{Int, Vector{Float64}, Bool}) where V <: AbstractVector{Bool}
     δ = scdca ? 0.25 : 1.1
     f = range(0.1, length = C, step = 0.1)
     
