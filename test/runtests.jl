@@ -55,7 +55,7 @@ function test_policy(C::Integer = 5, scdca::Bool = true)
 	
     π_params = (C, var, scdca)
 	
-	CDCP.policy(C, J -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
+	CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
 end
 
 (cutoffs, policies) = test_policy(15)
