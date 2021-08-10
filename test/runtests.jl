@@ -19,11 +19,11 @@ function test_single(C::Integer = 5, z::Real = 1.; scdca::Bool = true)
 	Random.seed!(1)
 	var = rand(C)
 	
-	CDCP.solve!((sub, sup, aux), J -> π(J, C), scdca)
-	CDCP.solve!((sub, sup, aux), J -> π(J, C), scdca, containers = (working, converged))
+	CDCP.solve!((sub, sup, aux), J -> π(J, C, var), scdca)
+	CDCP.solve!((sub, sup, aux), J -> π(J, C, var), scdca, containers = (working, converged))
 
-	CDCP.solve(C, J -> π(J, C), scdca)
-	CDCP.solve(C, J -> π(J, C), scdca, containers = (working, converged))
+	CDCP.solve(C, J -> π(J, C, var), scdca)
+	CDCP.solve(C, J -> π(J, C, var), scdca, containers = (working, converged))
 end
 
 Test.@test typeof(test_single(5)) <: AbstractVector{Bool}
