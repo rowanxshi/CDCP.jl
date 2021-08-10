@@ -29,30 +29,34 @@ end
 Test.@testset begin
 
 function test_single(C::Integer = 5, z::T = 1.; scdca::Bool = true) where T <: Real
+	Random.seed!(1)
+	var = rand(C)
+    π_params = (C, var, scdca)
+	
 	sub = falses(C)
 	sup = trues(C)
 	aux = falses(C)
-	
 	working = [(sub, sup, aux); ]
 	converged = similar(working)
-	Random.seed!(1)
-	var = rand(C)
-	
-    π_params = (C, var, scdca)
     
-	CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca)
-	CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca, containers = (working, converged))
+	a = CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca)
+	b = CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca, containers = (working, converged))
 
-	CDCP.solve(C, J -> π(J, z, π_params), scdca)
-	CDCP.solve(C, J -> π(J, z, π_params), scdca, containers = (working, converged))
+	c = CDCP.solve(C, J -> π(J, z, π_params), scdca)
+	d = CDCP.solve(C, J -> π(J, z, π_params), scdca, containers = (working, converged))
+    
+    return a, b, c, d
 end
 
-Test.@test typeof(test_single(5)) <: AbstractVector{Bool}
+(a, b, c, d) = test_single(5)
+Test.@test a == b
+Test.@test a == c
+Test.@test a == d
+Test.@test typeof(a) <: AbstractVector{Bool}
 
 function test_policy(C::Integer = 5, scdca::Bool = true)
 	Random.seed!(1)
 	var = rand(C)
-	
     π_params = (C, var, scdca)
 	
 	CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
