@@ -4,6 +4,8 @@
 Find the policy function for a combinatorial discrete choice problem over `C` choices and one dimension of heterogeneity with SCD-C from above if `scdca` is `true` (otherwise, from below) and SCD-T. The solver uses the objective function `π(J, z)`, which must accept as argument a Boolean vector with length `C` and the heterogeneous component `z`; the *optional* `zero_D_j_π(j, J)` function, which identifies the `z` where the marginal value of item `j` to set `J` is zero; and the `equalise_π((J1, J2))` function, which identifies the `z` where the agent is indifferent between the pair `(J1, J2)`.
 
 If the `zero_D_j_π` function is not provided, the solver automatically constructs one using the `equalise_π` function.
+
+See also: [`solve!`](@ref), [`solve`](@ref)
 """
 function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool)
 	sub = falses(C)

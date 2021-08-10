@@ -6,7 +6,7 @@ Solve in-place a combinatorial discrete choice problem with SCD-C from above if 
 
 The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value function; otherwise it will construct one automatically given `π`. It may also optionally take preallocated `containers = (working, converged)`, where `working` and `converged` are both `Vectors` with element type matching `(sub, sup, aux)`. These are used for the branching step and will be automatically allocated if not supplied.
 
-See also: [`solve`](@ref), [`policy](@ref)
+See also: [`solve`](@ref), [`policy`](@ref)
 """
 function solve!((sub, sup, aux)::NTuple{3, Any}, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
 	fill!(sub, false)
@@ -52,6 +52,8 @@ solve!((sub, sup, aux)::NTuple{3, Any}, π::F, scdca::Bool) where F<:Function = 
 Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the objective function `π(J)`. The objective function must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
 
 The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value function; otherwise it will construct one automatically given `π`. It may also optionally take preallocated `containers = (working, converged)`, where `working` and `converged` are both `Vectors` with element type matching `(sub, sup, aux)`. These are used for the branching step and will be automatically allocated if not supplied.
+
+See also: [`solve!`](@ref), [`policy`](@ref)
 """
 function solve(C::Integer, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
 	sub = falses(C)
