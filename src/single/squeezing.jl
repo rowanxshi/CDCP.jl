@@ -1,4 +1,4 @@
-function update!((sub, sup, aux)::NTuple{3, Any}, j::Integer, D_j_π::Function, scdca::Bool)
+function update!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, j::Integer, D_j_π::Function, scdca::Bool)
 	# for excluding: look at best case
 	exclude = (scdca && D_j_π(j, sub) ≤ 0.0) || (!scdca && D_j_π(j, sup) < 0.0)
 	if exclude
@@ -19,7 +19,7 @@ function update!((sub, sup, aux)::NTuple{3, Any}, j::Integer, D_j_π::Function, 
 	return false
 end
 
-function converge!((sub, sup, aux)::NTuple{3, Any}, D_j_π::Function, scdca::Bool)
+function converge!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, D_j_π::Function, scdca::Bool)
 	converged = false
 	
 	@inbounds while !converged

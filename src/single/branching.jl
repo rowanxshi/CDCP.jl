@@ -1,4 +1,4 @@
-function branch((sub, sup, aux)::NTuple{3, Any})
+function branch((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}})
 	aux_in = similar(sub)
 	fill!(aux_in, false)
 	fill!(aux, false)

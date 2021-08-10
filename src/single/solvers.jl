@@ -1,6 +1,6 @@
 """
-	solve!((sub, sup, aux)::NTuple{3, Any}, π, D_j_π, scdca::Bool; containers)
-	solve!((sub, sup, aux)::NTuple{3, Any}, π, scdca::Bool)
+	solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π, D_j_π, scdca::Bool; containers)
+	solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π, scdca::Bool)
 
 Solve in-place a combinatorial discrete choice problem with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the preallocated Boolean vectors `(sub, sup, aux)` as well as the objective function `π(J)`. The objective function `π` must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
 
@@ -8,7 +8,7 @@ The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value fu
 
 See also: [`solve`](@ref), [`policy`](@ref)
 """
-function solve!((sub, sup, aux)::NTuple{3, Any}, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
+function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
 	fill!(sub, false)
 	fill!(sup, true)
 	fill!(aux, false)
@@ -36,14 +36,14 @@ function solve!((sub, sup, aux)::NTuple{3, Any}, π::F, D_j_π::G, scdca::Bool; 
 	end
 	first(converged[i_argmax])
 end
-function solve!((sub, sup, aux)::NTuple{3, Any}, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<:Function}
+function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<:Function}
 	working = [(sub, sup, aux); ]
 	converged = similar(working)
 
 	solve!((sub, sup, aux), π, D_j(π), scdca, containers = (working, converged))
 end
-solve!((sub, sup, aux)::NTuple{3, Any}, π::F, scdca::Bool; containers) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca, containers = containers)
-solve!((sub, sup, aux)::NTuple{3, Any}, π::F, scdca::Bool) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca)
+solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, scdca::Bool; containers) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca, containers = containers)
+solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, scdca::Bool) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca)
 
 
 """

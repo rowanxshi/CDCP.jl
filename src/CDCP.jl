@@ -1,6 +1,6 @@
 module CDCP
 
-function next_undetermined((sub, sup, aux)::NTuple{3, Any})
+function next_undetermined((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}})
 	j = zero(first(eachindex(sub)))
 	for j in eachindex(sub)
 		(aux[j] || isequal(sub[j], sup[j])) && continue

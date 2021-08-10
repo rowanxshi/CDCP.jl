@@ -1,5 +1,12 @@
 import Test, Random, CDCP
 
+function π(J::BitVector, C::Int, var::Vector{Float64})
+    δ = scdca ? 0.25 : 1.1
+    f = range(0.1, length = C, step = 0.1)
+    
+    profits = z*sum(c -> J[c]*var[c], 1:C)^δ - sum(c -> J[c]*f[c], 1:C)
+end
+
 Test.@testset begin
 
 function test_single(C::Integer = 5, z::Real = 1.; scdca::Bool = true)
@@ -11,18 +18,12 @@ function test_single(C::Integer = 5, z::Real = 1.; scdca::Bool = true)
 	converged = similar(working)
 	Random.seed!(1)
 	var = rand(C)
-	function π(J::BitVector)
-		δ = scdca ? 0.25 : 1.1
-		f = range(0.1, length = C, step = 0.1)
-		
-		profits = z*sum(c -> J[c]*var[c], 1:C)^δ - sum(c -> J[c]*f[c], 1:C)
-	end
 	
-	CDCP.solve!((sub, sup, aux), π, scdca)
-	CDCP.solve!((sub, sup, aux), π, scdca, containers = (working, converged))
+	CDCP.solve!((sub, sup, aux), J -> π(J, C), scdca)
+	CDCP.solve!((sub, sup, aux), J -> π(J, C), scdca, containers = (working, converged))
 
-	CDCP.solve(C, π, scdca)
-	CDCP.solve(C, π, scdca, containers = (working, converged))
+	CDCP.solve(C, J -> π(J, C), scdca)
+	CDCP.solve(C, J -> π(J, C), scdca, containers = (working, converged))
 end
 
 Test.@test typeof(test_single(5)) <: AbstractVector{Bool}
@@ -61,6 +62,6 @@ end
 
 (cutoffs, policies) = test_policy(15)
 Test.@test typeof(cutoffs) == Vector{Float64}
-#~ Test.@test typeof(policies) == Vector{BitVector}
+Test.@test typeof(policies) == Vector{BitVector}
 
 end
