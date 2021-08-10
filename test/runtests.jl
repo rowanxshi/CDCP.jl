@@ -1,6 +1,6 @@
 import Test, Random, CDCP
 
-function π(J::BitVector, C::Int, var::Vector{Float64})
+function π(J::BitVector, C::Int, var::Vector{Float64}, scdca::Bool)
     δ = scdca ? 0.25 : 1.1
     f = range(0.1, length = C, step = 0.1)
     
@@ -19,11 +19,11 @@ function test_single(C::Integer = 5, z::Real = 1.; scdca::Bool = true)
 	Random.seed!(1)
 	var = rand(C)
 	
-	CDCP.solve!((sub, sup, aux), J -> π(J, C, var), scdca)
-	CDCP.solve!((sub, sup, aux), J -> π(J, C, var), scdca, containers = (working, converged))
+	CDCP.solve!((sub, sup, aux), J -> π(J, C, var, scdca), scdca)
+	CDCP.solve!((sub, sup, aux), J -> π(J, C, var, scdca), scdca, containers = (working, converged))
 
-	CDCP.solve(C, J -> π(J, C, var), scdca)
-	CDCP.solve(C, J -> π(J, C, var), scdca, containers = (working, converged))
+	CDCP.solve(C, J -> π(J, C, var, scdca), scdca)
+	CDCP.solve(C, J -> π(J, C, var, scdca), scdca, containers = (working, converged))
 end
 
 Test.@test typeof(test_single(5)) <: AbstractVector{Bool}
