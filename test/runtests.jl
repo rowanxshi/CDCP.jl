@@ -69,7 +69,7 @@ end
 Test.@test f == h
 Test.@test e ≈ g
 
-Test.@test typeof(f) == Vector{Float64}
-Test.@test typeof(g) == Vector{BitVector}
+Test.@test typeof(e) == Vector{Float64}
+Test.@test typeof(f) == Vector{BitVector}
 
 end
