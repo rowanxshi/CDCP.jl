@@ -47,7 +47,7 @@ function test_single(C::Integer = 5, z::T = 1.; scdca::Bool = true) where T <: R
     return a, b, c, d
 end
 
-(a, b, c, d, e) = test_single(5)
+(a, b, c, d) = test_single(5)
 Test.@test a == b
 Test.@test a == c
 Test.@test a == d
