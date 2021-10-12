@@ -7,7 +7,7 @@ If the `zero_D_j_π` function is not provided, the solver automatically construc
 
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
-function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool)
+function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool; show_time::Bool = false)
 	sub = falses(C)
 	sup = trues(C)
 	aux = falses(C)
@@ -20,15 +20,28 @@ function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool)
 	
 	# initial converge
 	push!(working, int)
-	converge!((working, converged), zero_D_j_π, scdca, memo, emptyset)
+	t1 = @elapsed converge!((working, converged), zero_D_j_π, scdca, memo, emptyset)
+	show_time && begin
+		println("initial converge: ", t1)
+		println()
+	end
 	
 	# branch if necessary: local optimal stored in done
-	converge_branches!((working, converged, done), zero_D_j_π, scdca, memo, emptyset)
+	t2 = @elapsed converge_branches!((working, converged, done), zero_D_j_π, scdca, memo, emptyset)
+	show_time && begin
+		println("branching: ", t2)
+		println()
+	end
 	
 	# brute force among local optima; final policy function stored in converged
-	brute((working, converged, done), π, equalise_π, scdca::Bool)
+	if show_time
+		println("brute forcing:")
+		@time brute!((working, converged, done), π, equalise_π, scdca::Bool)
+	else
+		brute!((working, converged, done), π, equalise_π, scdca::Bool)
+	end
 end
-function policy(C::Integer, π, equalise_π, scdca::Bool)
+function policy(C::Integer, π, equalise_π, scdca::Bool; show_time::Bool = false)
 	holder = falses(C)
 	function zero_D_j_π(j::Integer, J::AbstractVector{Bool})
 		holder .= J
@@ -40,5 +53,5 @@ function policy(C::Integer, π, equalise_π, scdca::Bool)
 		return z
 	end
 	
-	policy(C, π, zero_D_j_π, equalise_π, scdca::Bool)
+	policy(C, π, zero_D_j_π, equalise_π, scdca::Bool, show_time = show_time)
 end

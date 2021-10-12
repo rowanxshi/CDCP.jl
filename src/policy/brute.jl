@@ -1,4 +1,4 @@
-function brute((working, converged, done), π, equalise_π, scdca::Bool)
+function brute!((working, converged, done), π, equalise_π, scdca::Bool)
 	endpoints = Vector{typeof(Inf)}(undef, 0)
 	within_endpoints = similar(endpoints)
 	memo = Dict{NTuple{2, BitVector}, typeof(Inf)}()
