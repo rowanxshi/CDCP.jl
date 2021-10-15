@@ -1,7 +1,3 @@
-function branch(int::interval)
-	((a,b,c), (d,e,f)) = branch((int.sub, int.sup, int.aux))
-	return interval(a, b, c, int.l, int.r), interval(d, e, f, int.l, int.r)
-end
 function converge_branches!((working, converged, done)::NTuple{3, Vector{interval}}, zero_D_j_π, scdca, memo, emptyset)
 	while !isempty(converged)
 		int = pop!(converged)

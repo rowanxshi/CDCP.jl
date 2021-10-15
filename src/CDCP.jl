@@ -7,6 +7,7 @@ include("./single/squeezing.jl")
 include("./single/branching.jl")
 include("./single/solvers.jl")
 
+include("./policy/helpers.jl")
 include("./policy/squeezing.jl")
 include("./policy/branching.jl")
 include("./policy/brute.jl")

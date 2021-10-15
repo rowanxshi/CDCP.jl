@@ -7,8 +7,6 @@ function update!(int::interval, j::Int, zero_D_j_π, scdca, memo, emptyset)
 	best = scdca ? int.sub : int.sup
 	z_out = get!(memo, (j, best), zero_D_j_π(j, best))
 	
-	(z_in, z_out)
-	
 	# one new interval
 	@inbounds if z_in ≤ int.l
 		sub_new = int.sub[:]
