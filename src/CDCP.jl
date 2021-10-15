@@ -1,3 +1,4 @@
+"Solve CDCPs. Main functions provided are [`solve!`](@ref), [`solve`](@ref), and [`policy`](@ref). See [here](https://github.com/rowanxshi/CDCP.jl) for more."
 module CDCP
 
 include("helpers.jl")
