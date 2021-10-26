@@ -1,4 +1,4 @@
-function brute!((working, converged, done), π, equalise_π, scdca::Bool, memo...)
+function brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::Bool, memo...)
 	endpoints = Vector{typeof(Inf)}(undef, 0)
 	
 	for int in done
@@ -26,21 +26,21 @@ function brute!((working, converged, done), π, equalise_π, scdca::Bool, memo..
 			
 			# subinterval is an interval struct, but the BitVectors track which strategies (in converged) are still in consideration
 			push!(working, interval(active_strategies, endpoints[n], endpoints[n+1]))
-			converge_brute!((policy_fn, working), converged, π, memo...)
+			converge_brute!((policy_fn, working), converged, π, equalise_π, memo...)
 		end
 	end
 
 	policy_fn
 end
 
-converge_brute!((policy_fn, working), converged, π, memo...) = while !isempty(working)
+converge_brute!((policy_fn, working), converged, π, equalise_π, memo...) = while !isempty(working)
 	subinterval = last(working)
 	if sum(subinterval.sub) == 1
 		patch!(policy_fn, pop!(working))
 		continue
 	end
 
-	if !simple_filter!(subinterval, converged)
+	if !simple_filter!(subinterval, converged, π)
 		i_J1 = findfirst(subinterval.sub)
 		i_J2 = findlast(subinterval.sub)
 		J1 = converged[i_J1].sub
@@ -51,7 +51,7 @@ converge_brute!((policy_fn, working), converged, π, memo...) = while !isempty(w
 		z_equal = if isempty(memo) # memoised if a dictionary is provided
 			equalise_π(set_pair)
 		else
-			get!(equalise_π, first(memo), set_pair)
+			get!(first(memo), set_pair, equalise_π(set_pair))
 		end
 		left = subinterval.l
 		right = subinterval.r
@@ -88,7 +88,7 @@ function simple_filter!(subinterval::interval, i_pair::NTuple{2, Int}, set_pair:
 	J1_better
 end
 
-simple_filter!(subinterval::interval, converged::Vector{interval}) = @inbounds begin
+simple_filter!(subinterval::interval, converged::Vector{interval}, π) = @inbounds begin
 	options = sum(subinterval.sub)
 	
 	max_left = maximum(enumerate(converged)) do (i, option)
@@ -106,6 +106,53 @@ simple_filter!(subinterval::interval, converged::Vector{interval}) = @inbounds b
 	return options > sum(subinterval.sub)
 end
 
-function patch!(policy_fn, interval)
-	push!(policy_fn, interval)
+function patch!((cutoffs, policies), interval::interval)
+	left_in = insorted(interval.l, cutoffs)
+	right_in = insorted(interval.r, cutoffs)
+	
+	!any((left_in, right_in)) && begin
+		place = searchsortedfirst(cutoffs, interval.l)
+		cutoffs[place] < interval.r && error()
+		!isnothing(policies[place-1]) && error()
+		
+		insert!(cutoffs, place, interval.r)
+		insert!(policies, place, nothing)
+		
+		insert!(cutoffs, place, interval.l)
+		insert!(policies, place, interval.sub)
+		
+		return place
+	end
+	
+	all((left_in, right_in)) && begin
+		place = searchsortedfirst(cutoffs, interval.l)
+		cutoffs[place+1] != interval.r && error()
+		!isnothing(policies[place]) && error()
+		
+		policies[place] = interval.sub
+		
+		return place
+	end
+	
+	left_in && begin
+		place = searchsortedfirst(cutoffs, interval.l)
+		cutoffs[place+1] < interval.r && error()
+		!isnothing(policies[place]) && error()
+		
+		insert!(cutoffs, place+1, interval.r)
+		insert!(policies,  place, interval.sub)
+		
+		return place
+	end
+	
+	right_in && begin
+		place = searchsortedfirst(cutoffs, interval.l)
+		cutoffs[place-1] > interval.l && error()
+		!isnothing(policies[place-1]) && error()
+		
+		insert!(cutoffs, place, interval.l)
+		insert!(policies, place, interval.sub)
+		
+		return place
+	end
 end

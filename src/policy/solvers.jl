@@ -5,9 +5,13 @@ Find the policy function for a combinatorial discrete choice problem over `C` ch
 
 If the `zero_D_j_π` function is not provided, the solver automatically constructs one using the `equalise_π` function.
 
+	policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool, memo)
+	policy(C::Integer, π, equalise_π, scdca::Bool, memo)
+Optionally, the final brute force step can be partially memoised if a final argument `memo` is passed to either function method. `memo` must be a dictionary associating `(J1, J2)::NTuple{2, BitVector}` keys with `Float64` values.
+
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
-function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool; show_time::Bool = false)
+function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool, dict...; show_time::Bool = false)
 	sub = falses(C)
 	sup = trues(C)
 	aux = falses(C)
@@ -34,14 +38,18 @@ function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool; show_time
 	end
 	
 	# brute force among local optima; final policy function stored in converged
+	policies = Vector{Union{Nothing, BitVector}}(nothing, 1)
+	cutoffs = Float64[-Inf, Inf]
+	policy_fn = (cutoffs, policies)
+	
 	if show_time
 		println("brute forcing:")
-		@time brute!((working, converged, done), π, equalise_π, scdca::Bool)
+		@time brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::Bool, dict...)
 	else
-		brute!((working, converged, done), π, equalise_π, scdca::Bool)
+		brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::Bool, dict...)
 	end
 end
-function policy(C::Integer, π, equalise_π, scdca::Bool; show_time::Bool = false)
+function policy(C::Integer, π, equalise_π, scdca::Bool, memo...; show_time::Bool = false)
 	holder = falses(C)
 	function zero_D_j_π(j::Integer, J::AbstractVector{Bool})
 		holder .= J
@@ -53,5 +61,5 @@ function policy(C::Integer, π, equalise_π, scdca::Bool; show_time::Bool = fals
 		return z
 	end
 	
-	policy(C, π, zero_D_j_π, equalise_π, scdca::Bool, show_time = show_time)
+	policy(C, π, zero_D_j_π, equalise_π, scdca::Bool, memo..., show_time = show_time)
 end

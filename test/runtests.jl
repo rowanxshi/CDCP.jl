@@ -57,9 +57,12 @@ function test_policy(C::Integer = 5, scdca::Bool = true)
 	Random.seed!(1)
 	var = rand(C)
 	π_params = (C, var, scdca)
+	memo = Dict{NTuple{2, BitVector}, Float64}()
 	
 	e, f = CDCP.policy(C, (J, z) -> π(J, z, π_params), (j, J) -> zero_D_j_π(j, J, π_params), pair -> equalise_π(pair, π_params), scdca)
+	CDCP.policy(C, (J, z) -> π(J, z, π_params), (j, J) -> zero_D_j_π(j, J, π_params), pair -> equalise_π(pair, π_params), scdca, memo...)
 	g, h = CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca)
+	CDCP.policy(C, (J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), scdca, memo...)
 	
 	return e, f, g, h
 end
@@ -69,6 +72,6 @@ Test.@test f == h
 Test.@test e ≈ g
 
 Test.@test typeof(e) == Vector{Float64}
-Test.@test typeof(f) == Vector{BitVector}
+Test.@test typeof(f) == Vector{Union{BitVector, Nothing}}
 
 end
