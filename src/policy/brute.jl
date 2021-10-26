@@ -1,7 +1,5 @@
-function brute!((working, converged, done), π, equalise_π, scdca::Bool)
+function brute!((working, converged, done), π, equalise_π, scdca::Bool, memo...)
 	endpoints = Vector{typeof(Inf)}(undef, 0)
-	within_endpoints = similar(endpoints)
-	memo = Dict{NTuple{2, BitVector}, typeof(Inf)}()
 	
 	for int in done
 		push!(endpoints, int.l)
@@ -11,67 +9,103 @@ function brute!((working, converged, done), π, equalise_π, scdca::Bool)
 	
 	# go interval by interval
 	@inbounds for n in 1:(length(endpoints)-1)
-		# gather relevant decision sets into working
-		empty!(working)
+		# gather relevant decision sets into converged
+		empty!(converged)
 		for option in done
 			if (option.l ≤ endpoints[n]) && (option.r ≥ endpoints[n+1])
-				push!(working, option)
+				push!(converged, option)
 			end
 		end
-		if isone(length(working))
-			# store final policy function intervals in converged
-			push!(converged, pop!(working))
+		
+		if isone(length(converged))
+			patch!(policy_fn, pop!(converged))
 		else
-			empty!(within_endpoints)
-			# gather points where potentially policy changes
-			push!(within_endpoints, endpoints[n])
-			push!(within_endpoints, endpoints[n+1])
-			for i in 1:length(working), j in (i+1):length(working)
-				pair = (working[i].sub, working[j].sub)
-				z_equal = get!(memo, pair, equalise_π(pair))
-				(endpoints[n] < z_equal < endpoints[n+1]) && push!(within_endpoints, z_equal)
-			end
-			sort!(within_endpoints)
+			# track the current subinterval's progress with working
+			empty!(working)
+			active_strategies = trues(length(converged))
 			
-			# for each subinterval, evaluate at midpoint and find best
-			for nn in 1:(length(within_endpoints)-1)
-				z = if isinf(within_endpoints[nn])
-					within_endpoints[nn+1] - one(within_endpoints[nn+1])
-				elseif isinf(within_endpoints[nn+1])
-					within_endpoints[nn] + one(within_endpoints[nn])
-				else
-					(within_endpoints[nn] + within_endpoints[nn+1])/2
-				end
-				max_π = -Inf
-				i_max = 0
-				for (i_option, option) in enumerate(working)
-					option_π = π(option.sub, z)
-					if option_π > max_π
-						max_π = option_π
-						i_max = i_option
-					end
-				end
-				push!(converged, interval(working[i_max].sub, within_endpoints[nn], within_endpoints[nn+1]))
-			end
+			# subinterval is an interval struct, but the BitVectors track which strategies (in converged) are still in consideration
+			push!(working, interval(active_strategies, endpoints[n], endpoints[n+1]))
+			converge_brute!((policy_fn, working), converged, π, memo...)
 		end
 	end
-	
-	# paste together any adjacent intervals with the same policy
-	concatenate!(sort!(converged, lt=int_isless), endpoints)
+
+	policy_fn
 end
-function concatenate!(converged, endpoints)
-	empty!(endpoints)
-	policies = Vector{BitVector}(undef, 0)
-	push!(endpoints, first(converged).l)
-	push!(policies, first(converged).sub)
+
+converge_brute!((policy_fn, working), converged, π, memo...) = while !isempty(working)
+	subinterval = last(working)
+	if sum(subinterval.sub) == 1
+		patch!(policy_fn, pop!(working))
+		continue
+	end
+
+	if !simple_filter!(subinterval, converged)
+		i_J1 = findfirst(subinterval.sub)
+		i_J2 = findlast(subinterval.sub)
+		J1 = converged[i_J1].sub
+		J2 = converged[i_J2].sub
+		i_pair = (i_J1, i_J2)
+		set_pair = (J1, J2)
+
+		z_equal = if isempty(memo) # memoised if a dictionary is provided
+			equalise_π(set_pair)
+		else
+			get!(equalise_π, first(memo), set_pair)
+		end
+		left = subinterval.l
+		right = subinterval.r
+		if z_equal ≤ left
+			simple_filter!(subinterval, i_pair, set_pair, π, left)
+		elseif z_equal ≥ right
+			simple_filter!(subinterval, i_pair, set_pair, π, right)
+		else
+			append!(working, brute_branch!(pop!(working), i_pair, set_pair, π, z_equal))
+		end
+	end
+end
+
+function brute_branch!(subinterval::interval, i_pair::NTuple{2, Int}, set_pair::NTuple{2, BitVector}, π, z_equal)
+	subinterval_left = interval(subinterval.sub, subinterval.l, z_equal)
+	subinterval_right = interval(copy(subinterval.sub), z_equal, subinterval.r)
+
+	J1_better = simple_filter!(subinterval_left, i_pair, set_pair, π, (subinterval.l + z_equal)/2)
+	simple_filter!(subinterval_right, i_pair, !J1_better)
+
+	(subinterval_left, subinterval_right)
+end
+
+function simple_filter!(subinterval::interval, i_pair::NTuple{2, Int}, J1_better::Bool)
+	subinterval.sub[first(i_pair)] = J1_better
+	subinterval.sub[last(i_pair)] = !J1_better
+
+	J1_better
+end
+function simple_filter!(subinterval::interval, i_pair::NTuple{2, Int}, set_pair::NTuple{2, BitVector}, π, z)
+	J1_better = π(first(set_pair), z) > π(last(set_pair), z)
+	simple_filter!(subinterval, i_pair, J1_better)
+
+	J1_better
+end
+
+simple_filter!(subinterval::interval, converged::Vector{interval}) = @inbounds begin
+	options = sum(subinterval.sub)
 	
-	for int in converged
-		isequal(int.sub, last(policies)) && continue
-		push!(endpoints, int.l)
-		push!(policies, int.sub)
+	max_left = maximum(enumerate(converged)) do (i, option)
+		!subinterval.sub[i] && return -Inf
+		
+		π(option.sub, subinterval.l)
 	end
 	
-	push!(endpoints, last(converged).r)
+	for (i, option) in enumerate(converged)
+		!subinterval.sub[i] && continue
+		
+		(π(option.sub, subinterval.r) < max_left) && (subinterval.sub[i] = false)
+	end
 	
-	return endpoints, policies
+	return options > sum(subinterval.sub)
+end
+
+function patch!(policy_fn, interval)
+	push!(policy_fn, interval)
 end
