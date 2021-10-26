@@ -48,6 +48,9 @@ function policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool, dict...; 
 	else
 		brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::Bool, dict...)
 	end
+	
+	any(isnothing, policies) && warning("Some intervals do not have associated policies.")
+	policy_fn
 end
 function policy(C::Integer, π, equalise_π, scdca::Bool, memo...; show_time::Bool = false)
 	holder = falses(C)
