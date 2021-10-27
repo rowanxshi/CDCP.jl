@@ -30,7 +30,7 @@ function brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::B
 		end
 	end
 
-	policy_fn
+	paste_adjacent!(policy_fn)
 end
 
 converge_brute!((policy_fn, working), converged, π, equalise_π, memo...) = while !isempty(working)
@@ -108,6 +108,20 @@ simple_filter!(subinterval::interval, converged::Vector{interval}, π) = @inboun
 	return options > sum(subinterval.sub)
 end
 
+function paste_adjacent!((cutoffs, policies))
+	i = 1
+	for n in 1:(length(policies)-1)
+		changed = false
+		policies[i] == policies[i+1] && begin
+			deleteat!(cutoffs, i+1)
+			deleteat!(policies, i+1)
+			changed = true
+		end
+		i += changed ? 0 : 1
+	end
+		
+	cutoffs, policies
+end
 function patch!((cutoffs, policies), interval::interval)
 	left_in = insorted(interval.l, cutoffs)
 	right_in = insorted(interval.r, cutoffs)
