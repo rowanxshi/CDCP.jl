@@ -36,7 +36,9 @@ end
 converge_brute!((policy_fn, working), converged, π, equalise_π, memo...) = while !isempty(working)
 	subinterval = last(working)
 	if sum(subinterval.sub) == 1
-		patch!(policy_fn, pop!(working))
+		i_option = findfirst(subinterval.sub)
+		patch!(policy_fn, interval(converged[i_option].sub, subinterval.l, subinterval.r))
+		pop!(working)
 		continue
 	end
 
