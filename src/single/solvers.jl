@@ -71,3 +71,37 @@ function solve(C::Integer, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<
 end
 solve(C::Integer, π::F, scdca::Bool; containers) where F<:Function = solve(C::Integer, π, D_j(π), scdca; containers = containers)
 solve(C::Integer, π::F, scdca::Bool) where F<:Function = solve(C::Integer, π, D_j(π), scdca)
+
+"""
+	naive!(J::V, π) where V <: AbstractVector{Bool}
+
+Solve in-place a combinatorial discrete choice problem with simple brute force. (Generally used for testing or time-trial exercises.) The solver expectes a pre-allocated Boolean vector `J` and objective function `π(J)`.
+
+See also: [`naive`](@ref), [`solve!`](@ref), [`policy`](@ref)
+"""
+function naive!(J::V, π) where V <: AbstractVector{Bool}
+	i_max = -1; max = -Inf
+	
+	for n in 0:(2^length(J)-1)
+		digits!(J, n, base = 2)
+		π(J) > max && begin
+			max = π(J)
+			i_max = n
+		end
+	end
+	
+	digits!(J, i_max, base = 2)
+end
+
+"""
+	naive(C::Int, π)
+
+Solve a combinatorial discrete choice problem over `C` choices with simple brute force. (Generally used for testing or time-trial exercises.) The solver an objective function `π(J)`.
+
+See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
+"""
+function naive(C::Int, π)
+	J = falses(C)
+	naive!(J, π)
+	J
+end
