@@ -25,28 +25,32 @@ function equalise_π((J1, J2)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{
 	z = sum(c -> J1[c]*var[c], 1:C)^δ - sum(c -> J2[c]*var[c], 1:C)^δ
 	z = sum(c -> (J1[c] - J2[c])*f[c], 1:C)/z
 end
+function initiate(C::Int = 10, scdca::Bool = false; seed::Int = 10)
+	Random.seed!(seed)
+	var = rand(C)
+	π_params = (C, var, scdca)
+	functions = (J, z) -> π(J, z, π_params), (j, J) -> zero_D_j_π(j, J, π_params), pair -> equalise_π(pair, π_params)
+	return functions, π_params
+end
 
 Test.@testset begin
 
 function coincide(C::Int, scdca::Bool; seed::Int = 10)
-	Random.seed!(seed)
-	var = rand(C)
-	π_params = (C, var, scdca)	
-	π_test(J, z) = π(J, z, π_params)
+	(functions, ) = initiate(C, scdca, seed = seed)
 	
 	J = falses(C)
 	sub = falses(C); sup = trues(C); aux = falses(C);
 	
-	(cutoffs, policies) = CDCP.policy(C, π_test, pair -> equalise_π(pair, π_params), scdca)
+	(cutoffs, policies) = CDCP.policy(C, functions..., scdca)
 	
 	z_wrong = nothing
 	coincide = all(0.01:0.1:50) do z
-		CDCP.naive!(J, J -> π_test(J, z))	
-		CDCP.solve!((sub, sup, aux), J -> π_test(J, z), scdca)
-		
+		CDCP.naive!(J, J -> first(functions)(J, z))	
+		CDCP.solve!((sub, sup, aux), J -> first(functions)(J, z), scdca)
+
 		interval = searchsortedfirst(cutoffs, z)-1
 		
-		match = (J == sup == policies[interval])
+		match = (J == sub == policies[interval])
 		!match && (z_wrong = z)
 		match
 	end
