@@ -28,16 +28,42 @@ end
 
 Test.@testset begin
 
+function coincide(C::Int, scdca::Bool; seed::Int = 10)
+	Random.seed!(seed)
+	var = rand(C)
+	π_params = (C, var, scdca)	
+	π_test(J, z) = π(J, z, π_params)
+	
+	J = falses(C)
+	sub = falses(C); sup = trues(C); aux = falses(C);
+	
+	(cutoffs, policies) = CDCP.policy(C, π_test, pair -> equalise_π(pair, π_params), scdca)
+	
+	z_wrong = nothing
+	coincide = all(0.01:0.1:50) do z
+		CDCP.naive!(J, J -> π_test(J, z))	
+		CDCP.solve!((sub, sup, aux), J -> π_test(J, z), scdca)
+		
+		interval = searchsortedfirst(cutoffs, z)-1
+		
+		match = (J == sup == policies[interval])
+		!match && (z_wrong = z)
+		match
+	end
+	
+	(coincide, z_wrong)
+end
+
+#println("Test solution methods coincide with brute force")
+#Test.@test first(coincide(C, scdca, seed = seed))
+
 function test_single(C::Integer = 5, z::T = 1.; scdca::Bool = true) where T <: Real
-	Random.seed!(1)
+	Random.seed!(10)
 	var = rand(C)
 	π_params = (C, var, scdca)
 	
-	sub = falses(C)
-	sup = trues(C)
-	aux = falses(C)
-	working = [(sub, sup, aux); ]
-	converged = similar(working)
+	sub = falses(C); sup = trues(C); aux = falses(C)
+	working = [(sub, sup, aux); ]; converged = similar(working)
 	
 	a = CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca)
 	b = CDCP.solve!((sub, sup, aux), J -> π(J, z, π_params), scdca, containers = (working, converged))
@@ -47,6 +73,7 @@ function test_single(C::Integer = 5, z::T = 1.; scdca::Bool = true) where T <: R
 	return a, b, c, d
 end
 
+println("Test all single-agent methods")
 (a, b, c, d) = test_single(5)
 Test.@test a == b
 Test.@test a == c
@@ -54,7 +81,7 @@ Test.@test a == d
 Test.@test typeof(a) <: AbstractVector{Bool}
 
 function test_policy(C::Integer = 5, scdca::Bool = true)
-	Random.seed!(1)
+	Random.seed!(10)
 	var = rand(C)
 	π_params = (C, var, scdca)
 	memo = Dict{NTuple{2, BitVector}, Float64}()
@@ -67,11 +94,13 @@ function test_policy(C::Integer = 5, scdca::Bool = true)
 	return e, f, g, h
 end
 
+println("Test all policy function methods")
 (e, f, g, h) = test_policy(15)
 Test.@test f == h
 Test.@test e ≈ g
 
 Test.@test typeof(e) == Vector{Float64}
 Test.@test typeof(f) == Vector{Union{BitVector, Nothing}}
+Test.@test length(first(f)) == 15
 
 end
