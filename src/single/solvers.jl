@@ -34,7 +34,9 @@ function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVecto
 			i_argmax = i
 		end
 	end
-	first(converged[i_argmax])
+	argmax = first(converged[i_argmax])
+	sub .= argmax
+	sup .= argmax
 end
 function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<:Function}
 	working = [(sub, sup, aux); ]
