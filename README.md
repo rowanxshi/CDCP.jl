@@ -7,14 +7,14 @@ A Julia package to solve [combinatorial discrete choice problems](https://rowanx
 From command line:
 
 ```julia
-julia -e 'using Pkg; Pkg.add(url="https://github.com/rowanxshi/CDCP.jl")
+julia -e 'import Pkg; Pkg.add(url="https://github.com/rowanxshi/CDCP.jl#main")'
 ```
 
 From within Julia:
 
 ```julia
 import Pkg
-Pkg.add(url="https://github.com/rowanxshi/CDCP.jl")
+Pkg.add(url="https://github.com/rowanxshi/CDCP.jl#main")
 ```
 
 ## Key functions
