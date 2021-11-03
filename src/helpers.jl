@@ -7,15 +7,10 @@ function next_undetermined((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: Ab
 	return j
 end
 
-function D_j(π::Function)
-	function D_j_π(j::Integer, J::A) where A <: AbstractArray{Bool}
-		bool_j = J[j]
-		J[j] = true
-		marg = π(J)
-		J[j] = false
-		marg -= π(J)
-		J[j] = bool_j
-		return marg
-	end
+function containers(C::Int)
+	sub = falses(C)
+	sup = trues(C)
+	aux = falses(C)
+	
+	(sub, sup, aux)
 end
-
