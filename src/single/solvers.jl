@@ -1,6 +1,5 @@
 """
-	solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π, D_j_π, scdca::Bool; containers)
-	solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π, scdca::Bool)
+	solve!((sub, sup, aux)::NTuple{3, AbstractVector{Bool}}, scdca::Bool, π, [D_j_π; containers])
 
 Solve in-place a combinatorial discrete choice problem with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the preallocated Boolean vectors `(sub, sup, aux)` as well as the objective function `π(J)`. The objective function `π` must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
 
@@ -8,7 +7,8 @@ The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value fu
 
 See also: [`solve`](@ref), [`policy`](@ref)
 """
-function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
+function solve!(Vs::NTuple{3, AbstractVector{Bool}}, scdca::Bool, π::F, D_j_π::G = D_j(π); containers = containers(Vs)) where {F<:Function, G<:Function}
+	sub, sup, aux = Vs
 	fill!(sub, false)
 	fill!(sup, true)
 	fill!(aux, false)
@@ -25,8 +25,7 @@ function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVecto
 	converge_branches!((working, converged), D_j_π, scdca)
 
 	# among results in converged, choose best
-	i_argmax = 0
-	max_prof = -Inf
+	i_argmax = 0; max_prof = -Inf
 	for (i, option) in enumerate(converged)
 		prof = π(first(option))
 		if prof > max_prof
@@ -38,50 +37,28 @@ function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVecto
 	sub .= argmax
 	sup .= argmax
 end
-function solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<:Function}
-	working = [(sub, sup, aux); ]
-	converged = similar(working)
-
-	solve!((sub, sup, aux), π, D_j(π), scdca, containers = (working, converged))
-end
-solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, scdca::Bool; containers) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca, containers = containers)
-solve!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, π::F, scdca::Bool) where F<:Function = solve!((sub, sup, aux), π, D_j(π), scdca)
-
 
 """
-	solve(C::Integer, π, D_j_π, scdca::Bool; containers)
-	solve(C::Integer, π, scdca::Bool; containers)
-Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the objective function `π(J)`. The objective function must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
+	solve(C::Integer, scdca::Bool, π, [D_j_π; containers])
+
+Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the objective function `π(J)` which must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
 
 The solver can optionally take `D_j_π(j, J)`, a user-supplied marginal value function; otherwise it will construct one automatically given `π`. It may also optionally take preallocated `containers = (working, converged)`, where `working` and `converged` are both `Vectors` with element type matching `(sub, sup, aux)`. These are used for the branching step and will be automatically allocated if not supplied.
 
 See also: [`solve!`](@ref), [`policy`](@ref)
 """
-function solve(C::Integer, π::F, D_j_π::G, scdca::Bool; containers) where {F<:Function, G<:Function}
-	sub = falses(C)
-	sup = trues(C)
-	aux = falses(C)
-	
-	solve!((sub, sup, aux), π, D_j_π, scdca, containers = containers)
+function solve(C::Integer, scdca::Bool, π::F, D_j_π::G = D_j(π); containers = containers(containers(C))) where {F<:Function, G<:Function}
+	solve!(isempty(first(containers)) ? containers(C) : first(first(containers)), scdca, π, D_j_π, containers = containers)
 end
-function solve(C::Integer, π::F, D_j_π::G, scdca::Bool) where {F<:Function, G<:Function}
-	sub = falses(C)
-	sup = trues(C)
-	aux = falses(C)
-	
-	solve!((sub, sup, aux), π, D_j_π, scdca)
-end
-solve(C::Integer, π::F, scdca::Bool; containers) where F<:Function = solve(C::Integer, π, D_j(π), scdca; containers = containers)
-solve(C::Integer, π::F, scdca::Bool) where F<:Function = solve(C::Integer, π, D_j(π), scdca)
 
 """
-	naive!(J::V, π) where V <: AbstractVector{Bool}
+	naive!(J::AbstractVector{Bool}, π)
 
 Solve in-place a combinatorial discrete choice problem with simple brute force. (Generally used for testing or time-trial exercises.) The solver expectes a pre-allocated Boolean vector `J` and objective function `π(J)`.
 
 See also: [`naive`](@ref), [`solve!`](@ref), [`policy`](@ref)
 """
-function naive!(J::V, π) where V <: AbstractVector{Bool}
+function naive!(J::AbstractVector{Bool}, π)
 	i_max = -1; max = -Inf
 	
 	for n in 0:(2^length(J)-1)
@@ -102,8 +79,4 @@ Solve a combinatorial discrete choice problem over `C` choices with simple brute
 
 See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
 """
-function naive(C::Int, π)
-	J = falses(C)
-	naive!(J, π)
-	J
-end
+naive(C::Int, π)= naive!(falses(C), π)

@@ -26,8 +26,7 @@ The package provides `solve!`, `solve`, and `policy`.
 Either `solve!` or `solve` can handle single agent problems. The first solves the problem inplace, so it should be provided with three pre-allocated Boolean vectors `(sub, sup, aux)`, the objective function `π`, and whether the problem satisfies SCD-C from above.
 
 ```julia
-solve!((sub, sup, aux), π, D_j_π, scdca::Bool; containers)
-solve!((sub, sup, aux), π, scdca::Bool; containers)
+solve!((sub, sup, aux)::NTuple{3, AbstractVector{Bool}}, scdca::Bool, π, [D_j_π; containers])
 ```
 
 The solver expects the objective function `π(J)` to accept a Boolean vector like `sub`.
@@ -51,28 +50,27 @@ The `containers = (working, converged)` can be preallocated and passed to the so
 > If the objective obeys SCD-C from above:
 >
 > ```julia
-> solve!((sub, sup, aux), π, D_j_π, true, containers = (working, converged)) 
+> solve!((sub, sup, aux), true, π, D_j_π, containers = (working, converged)) 
 > ```
 >
 > If the objective obeys SCD-C from below:
 >
 > ```julia
-> solve!((sub, sup, aux), π, D_j_π, false, containers = (working, converged)) 
+> solve!((sub, sup, aux), false, π, D_j_π, containers = (working, converged)) 
 > ```
 >
 > We could equally call the solver omitting the preallocated containers, the marginal value function, or both:
 >
 > ```julia
-> solve!((sub, sup, aux), π, D_j_π, true)
-> solve!((sub, sup, aux), π, true, containers = (working, converged)) 
-> solve!((sub, sup, aux), π, true)
+> solve!((sub, sup, aux), true, π, D_j_π)
+> solve!((sub, sup, aux), true, π, containers = (working, converged)) 
+> solve!((sub, sup, aux), true, π)
 > ```
 
 Pre-allocating is helpful if the problem will be solved many times because it avoids the solver allocating the vectors each time.
 
 ```julia
-solve(C::Integer, π, D_j_π, scdca::Bool; containers)
-solve(C::Integer, π, scdca::Bool; containers)
+solve(C::Integer, scdca::Bool, π, [D_j_π; containers])
 ```
 
 Non-inplace versions, where `C` is the number of items in the CDCP. ( `C` need not be specified for the inplace caller, since it can be inferred from the length of the Boolean vectors.) They are otherwise identical in usage to the inplace versions.
@@ -82,8 +80,7 @@ Non-inplace versions, where `C` is the number of items in the CDCP. ( `C` need n
 The package provides `policy` to identify the policy function for problems over a single dimension of heterogeneity (which we call _productivity_ from here).
 
 ```julia
-policy(C::Integer, π, zero_D_j_π, equalise_π, scdca::Bool)
-policy(C::Integer, π, equalise_π, scdca::Bool)
+policy(C::Integer, scdca::Bool, π, equalise_π, [zero_D_j_π])
 ```
 
 The solver now expects the objective function `π(J, z)` to accept a Boolean vector `J` and a real number `z` describing _productivity_. It also requires a function `equalise_π((J1, J2))`, which take a pair of Boolean vectors `(J1, J2)` and returns the _productivity_ of an agent indifferent between the two strategies.
@@ -98,18 +95,18 @@ The policy function will be returned as a series of cutoff _productivities_ and 
 >
 > If the objective obeys SCD-C from above:
 > ```julia
-> (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, true)
+> (cutoffs, policies) = policy(3, true, π, equalise_π, zero_D_j_π)
 > ```
 >
 > If the objective obeys SCD-C from below
 > ```julia
-> (cutoffs, policies) = policy(3, π, zero_D_j_π, equalise_π, false)
+> (cutoffs, policies) = policy(3, false, π, equalise_π, zero_D_j_π)
 > ```
 >
 > We could equally omit the `zero_D_j_π` function, letting the solver generate one itself:
 >
 > ```julia
-> (cutoffs, policies) = policy(3, π, equalise_π, false)
+> (cutoffs, policies) = policy(3, false, π, equalise_π)
 > ```
 >
 > The returned returned `cutoffs` will be a vector of cutoffs; say `cutoffs = [-Inf, 2, 4, 6, Inf]`. The returned `policies` will be a vector of Boolean arrays, say

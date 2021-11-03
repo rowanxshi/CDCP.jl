@@ -3,6 +3,7 @@ module CDCP
 
 include("helpers.jl")
 
+include("./single/helpers.jl")
 include("./single/squeezing.jl")
 include("./single/branching.jl")
 include("./single/solvers.jl")
