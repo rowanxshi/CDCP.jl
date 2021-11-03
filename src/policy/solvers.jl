@@ -6,7 +6,6 @@ Find the policy function for a combinatorial discrete choice problem over `C` ch
 The solver can optionally take `zero_D_j_π(j, J)`, a user-supplied marginal value function, which identifies the `z` where the marginal value of item `j` to set `J` is zero. If it is not provided, the solver automatically constructs one using the `equalise_π` function.
 
 Optionally, the final brute force step can be partially memoised if the final argument `memo` is passed to either function method. `memo` must be a pre-allocated dictionary associating `(J1, J2)::NTuple{2, BitVector}` keys with `Float64` values.
-
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
 function policy(C::Integer, scdca::Bool, π, equalise_π, zero_D_j_π = zero_D_j(C, equalise_π), dict...; show_time::Bool = false)
