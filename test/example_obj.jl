@@ -29,6 +29,6 @@ function initiate(C::Int = 10, scdca::Bool = false; seed::Int = 10)
 	Random.seed!(seed)
 	var = rand(C)
 	π_params = (C, var, scdca)
-	functions = ((J, z) -> π(J, z, π_params), pair -> equalise_π(pair, π_params), (j, J) -> zero_D_j_π(j, J, π_params))
+	functions = (π = ((J, z) -> π(J, z, π_params)), equalise_π = (pair -> equalise_π(pair, π_params)), zero_D_j_π = ((j, J) -> zero_D_j_π(j, J, π_params)))
 	return functions, π_params
 end
