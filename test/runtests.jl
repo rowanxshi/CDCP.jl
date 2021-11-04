@@ -1,4 +1,4 @@
-import Test, Random, CDCP
+import Test, CDCP
 
 include("example_obj.jl")
 
