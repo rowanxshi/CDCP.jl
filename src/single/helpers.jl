@@ -6,7 +6,7 @@ function containers((sub, sup, aux)::NTuple{3, AbstractVector{Bool}})
 end
 
 function D_j(π::Function)
-	function D_j_π(j::Integer, J::A) where A <: AbstractArray{Bool}
+	D_j_π(j::Integer, J::AbstractArray{Bool}) = let π = π
 		bool_j = J[j]
 		J[j] = true
 		marg = π(J)

@@ -122,52 +122,52 @@ function paste_adjacent!((cutoffs, policies))
 		
 	cutoffs, policies
 end
-function patch!((cutoffs, policies), interval::interval)
-	left_in = insorted(interval.l, cutoffs)
-	right_in = insorted(interval.r, cutoffs)
+function patch!((cutoffs, policies), int::interval)
+	left_in = insorted(int.l, cutoffs)
+	right_in = insorted(int.r, cutoffs)
 	
 	!any((left_in, right_in)) && begin
-		place = searchsortedfirst(cutoffs, interval.l)
-		cutoffs[place] < interval.r && error()
+		place = searchsortedfirst(cutoffs, int.l)
+		cutoffs[place] < int.r && error()
 		!isnothing(policies[place-1]) && error()
 		
-		insert!(cutoffs, place, interval.r)
+		insert!(cutoffs, place, int.r)
 		insert!(policies, place, nothing)
 		
-		insert!(cutoffs, place, interval.l)
-		insert!(policies, place, interval.sub)
+		insert!(cutoffs, place, int.l)
+		insert!(policies, place, int.sub)
 		
 		return place
 	end
 	
 	all((left_in, right_in)) && begin
-		place = searchsortedfirst(cutoffs, interval.l)
-		cutoffs[place+1] != interval.r && error()
+		place = searchsortedfirst(cutoffs, int.l)
+		cutoffs[place+1] != int.r && error()
 		!isnothing(policies[place]) && error()
 		
-		policies[place] = interval.sub
+		policies[place] = int.sub
 		
 		return place
 	end
 	
 	left_in && begin
-		place = searchsortedfirst(cutoffs, interval.l)
-		cutoffs[place+1] < interval.r && error()
+		place = searchsortedfirst(cutoffs, int.l)
 		!isnothing(policies[place]) && error()
+		cutoffs[place+1] < int.r && error()
 		
-		insert!(cutoffs, place+1, interval.r)
-		insert!(policies,  place, interval.sub)
+		insert!(cutoffs, place+1, int.r)
+		insert!(policies,  place, int.sub)
 		
 		return place
 	end
 	
 	right_in && begin
-		place = searchsortedfirst(cutoffs, interval.l)
-		cutoffs[place-1] > interval.l && error()
+		place = searchsortedfirst(cutoffs, int.l)
+		cutoffs[place-1] > int.l && error()
 		!isnothing(policies[place-1]) && error()
 		
-		insert!(cutoffs, place, interval.l)
-		insert!(policies, place, interval.sub)
+		insert!(cutoffs, place, int.l)
+		insert!(policies, place, int.sub)
 		
 		return place
 	end

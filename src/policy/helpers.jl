@@ -10,9 +10,9 @@ interval(triad::NTuple{3, BitVector}, l::N1, r::N2) where {N1 <: Real, N2 <: Rea
 int_isless(int1::interval, int2::interval) =int1.l < int2.l
 next_undetermined(int::interval) = next_undetermined((int.sub, int.sup, int.aux))
 
-function zero_D_j(C::Int, equalise_π::F) where F <: Function
+function zero_D_j(C::Int, equalise_π)
 	holder = falses(C)
-	function zero_D_j_π(j::Integer, J::AbstractVector{Bool})
+	zero_D_j_π(j::Integer, J::AbstractVector{Bool}) = let holder = holder
 		holder .= J
 		bool_j = J[j]
 		J[j] = true
@@ -21,8 +21,6 @@ function zero_D_j(C::Int, equalise_π::F) where F <: Function
 		J[j] = bool_j
 		return z
 	end
-	
-	zero_D_j_π
 end
 
 function branch(int::interval)
