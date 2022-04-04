@@ -1,29 +1,23 @@
-function branch((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}})
-	aux_in = similar(sub)
-	fill!(aux_in, false)
-	fill!(aux, false)
+function branch((sub, sup, aux))
+	aux_in = fill!(copy(aux), false)
+	aux = fill!(aux, false)
 	
 	j = next_undetermined((sub, sup, aux_in))
 	
-	sub_in = similar(sub)
-	copyto!(sub_in, sub)
-	sub_in[j] = true
-	
-	sup_out = similar(sup)
-	copyto!(sup_out, sup)
-	sup_out[j] = false
+	sub_in = setindex!(copy(sub), true, j)
+	sup_out = setindex!(copy(sub), false, j)
 	
 	return (sub_in, sup, aux_in), (sub, sup_out, aux)
 end
 
-function converge_branches!((working, converged), D_j_π::F, scdca::Bool) where F <: Function
+function converge_branches!((working, converged); cdcp...)
 	while !isempty(working)
 		(sub, sup, aux) = pop!(working)
 		if isequal(sub, sup)
 			push!(converged, (sub, sup, aux))
 			continue
 		end
-		converge!((sub, sup, aux), D_j_π, scdca)
+		(sub, sup, aux) = converge!((sub, sup, aux); cdcp...)
 		isequal(sub, sup) ? push!(converged, (sub, sup, aux)) : append!(working, collect(branch((sub, sup, aux))))
 	end
 	return converged

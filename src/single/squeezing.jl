@@ -1,32 +1,30 @@
-function update!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, j::Integer, D_j_π::Function, scdca::Bool)
+function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	# for excluding: look at best case
-	exclude = (scdca && D_j_π(j, sub) ≤ 0.0) || (!scdca && D_j_π(j, sup) < 0.0)
+	exclude = (scdca && D_j_obj(j, sub) ≤ 0) || (!scdca && D_j_obj(j, sup) < 0)
 	if exclude
-		sup[j] = false
-		aux .= false
-		return true
+		sup = setindex!(sub, false, j)
+		aux = fill!(aux, false)
+		return (sub, sup, aux)
 	end
 
 	# for including: look at worst case
-	include = (scdca && D_j_π(j, sup) > 0.0) || (!scdca && D_j_π(j, sub) ≥ 0.0)
+	include = (scdca && D_j_obj(j, sup) > 0) || (!scdca && D_j_obj(j, sub) ≥ 0)
 	if include
-		sub[j] = true
-		aux .= false
-		return true
+		sub = setindex!(sub, true, j)
+		aux = fill!(aux, false)
+		return (sub, sup, aux)
 	end
 	
-	aux[j] = true
-	return false
+	aux = setindex!(aux, true, j)
+	return (sub, sup, aux)
 end
 
-function converge!((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}}, D_j_π::Function, scdca::Bool)
-	converged = false
-	
-	@inbounds while !converged
-		j = next_undetermined((sub, sup, aux))
+function converge!(Vs; D_j_obj, scdca::Bool)
+	@inbounds while true
+		j = next_undetermined(Vs)
 		iszero(j) && break
-		update!((sub, sup, aux), j, D_j_π, scdca)
+		Vs = update!(Vs, j; D_j_obj, scdca)
 	end
 	
-	(sub, sup, aux)
+	Vs
 end

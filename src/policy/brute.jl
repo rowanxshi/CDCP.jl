@@ -1,111 +1,112 @@
-function brute!(policy_fn, (working, converged, done), π, equalise_π, scdca::Bool, memo...)
-	endpoints = Vector{typeof(Inf)}(undef, 0)
-	
+function brute!(policy, working, converged, done; cdcp...)
+	cutoffs, policies = policy
 	for int in done
-		push!(endpoints, int.l)
-		push!(endpoints, int.r)
+		push!(cutoffs, int.l); push!(cutoffs, int.r)
 	end
-	unique!(sort!(endpoints))
+	unique!(sort!(cutoffs))
+	
+	empty!(policies)
+	resize!(policies, length(cutoffs) - 1)
+	fill!(policies, nothing)
 	
 	# go interval by interval
-	@inbounds for n in 1:(length(endpoints)-1)
+	for k in eachindex(policies)
 		# gather relevant decision sets into converged
 		empty!(converged)
 		for option in done
-			if (option.l ≤ endpoints[n]) && (option.r ≥ endpoints[n+1])
+			if (option.l ≤ cutoffs[k]) && (option.r ≥ cutoffs[k+1])
 				push!(converged, option)
 			end
 		end
-		
+##		
 		if isone(length(converged))
-			patch!(policy_fn, pop!(converged))
+			policies[k] = first(converged).sub
 		else
-			# track the current subinterval's progress with working
+#			track the current subinterval's progress with working
 			empty!(working)
-			active_strategies = trues(length(converged))
+			active_strats = trues(length(converged))
 			
 			# subinterval is an interval struct, but the BitVectors track which strategies (in converged) are still in consideration
-			push!(working, interval(active_strategies, endpoints[n], endpoints[n+1]))
-			converge_brute!((policy_fn, working), converged, π, equalise_π, memo...)
+			push!(working, interval(active_strats, cutoffs[k], cutoffs[k+1]))
+			converge_brute!(policy, working, converged; cdcp...)
 		end
 	end
-
-	paste_adjacent!(policy_fn)
+#
+#	paste_adjacent!(policy)
 end
 
-converge_brute!((policy_fn, working), converged, π, equalise_π, memo...) = while !isempty(working)
-	subinterval = last(working)
-	if sum(subinterval.sub) == 1
-		i_option = findfirst(subinterval.sub)
-		patch!(policy_fn, interval(converged[i_option].sub, subinterval.l, subinterval.r))
+converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
+	subint = last(working)
+	if sum(subint.sub) == 1
+		i_option = findfirst(subint.sub)
+		patch!(policy, interval(converged[i_option].sub, subint.l, subint.r))
 		pop!(working)
 		continue
 	end
 
-	if !simple_filter!(subinterval, converged, π)
-		i_J1 = findfirst(subinterval.sub)
-		i_J2 = findlast(subinterval.sub)
+	if !simple_filter!(subint, converged; cdcp...)
+		i_J1 = findfirst(subint.sub)
+		i_J2 = findlast(subint.sub)
 		J1 = converged[i_J1].sub
 		J2 = converged[i_J2].sub
 		i_pair = (i_J1, i_J2)
-		set_pair = (J1, J2)
+		pair = (J1, J2)
 
-		z_equal = if isempty(memo) # memoised if a dictionary is provided
-			equalise_π(set_pair)
-		else
-			get!(first(memo), set_pair, equalise_π(set_pair))
+		if haskey(cdcp, :pairwise)
+			simple_filter!(subint, converged, i_J1, i_J2; cdcp...) && continue
 		end
-		left = subinterval.l
-		right = subinterval.r
-		if z_equal ≤ left
-			simple_filter!(subinterval, i_pair, set_pair, π, left)
-		elseif z_equal ≥ right
-			simple_filter!(subinterval, i_pair, set_pair, π, right)
+
+		z_equal = cdcp[:equalise_obj](pair, subint.l, subint.r)
+
+		if isnothing(z_equal) || z_equal ≤ subint.l || z_equal ≥ subint.r
+			simple_filter!(subint, converged, (subint.l + subint.r)/2, i_J1, i_J2; cdcp...)
 		else
-			append!(working, brute_branch!(pop!(working), i_pair, set_pair, π, z_equal))
+			append!(working, brute_branch!(pop!(working), converged, z_equal, i_J1, i_J2; cdcp...))
 		end
 	end
 end
 
-function brute_branch!(subinterval::interval, i_pair::NTuple{2, Int}, set_pair::NTuple{2, BitVector}, π, z_equal)
-	subinterval_left = interval(subinterval.sub, subinterval.l, z_equal)
-	subinterval_right = interval(copy(subinterval.sub), z_equal, subinterval.r)
+function brute_branch!(subint::interval, converged, z_equal, i_pair...; cdcp...)
+	subint_left = interval(subint.sub, subint.l, z_equal)
+	subint_right = interval(copy(subint.sub), z_equal, sub.r)
 
-	J1_better = simple_filter!(subinterval_left, i_pair, set_pair, π, (subinterval.l + z_equal)/2)
-	simple_filter!(subinterval_right, i_pair, !J1_better)
+	simple_filter!(left_subint, converged, subint.l, i_pair...; cdcp...)
+	simple_filter!(right_subint, converged, subint.r, i_pair...; cdcp...)
 
-	(subinterval_left, subinterval_right)
+	(subint_left, subint_right)
 end
 
-function simple_filter!(subinterval::interval, i_pair::NTuple{2, Int}, J1_better::Bool)
-	subinterval.sub[first(i_pair)] = J1_better
-	subinterval.sub[last(i_pair)] = !J1_better
-
-	J1_better
-end
-function simple_filter!(subinterval::interval, i_pair::NTuple{2, Int}, set_pair::NTuple{2, BitVector}, π, z)
-	J1_better = π(first(set_pair), z) > π(last(set_pair), z)
-	simple_filter!(subinterval, i_pair, J1_better)
-
-	J1_better
+function simple_filter!(subint::interval, converged, z, i_pair...; cdcp...)
+	diff = cdcp[:obj](converged[first(i_pair)].sub, z) - cdcp[:obj](converged[last(i_pair)].sub, z)
+	subint.sub[signbit(diff) ? last(i_pair) : first(i_pair)] = false
+	return true
 end
 
-simple_filter!(subinterval::interval, converged::Vector{interval}, π) = @inbounds begin
-	options = sum(subinterval.sub)
+function simple_filter!(subint::interval, converged, i_pair...; cdcp...)
+	pair = converged[first(i_pair)].sub, converged[last(i_pair)].sub
+	J1_better = cdcp[:pairwise](pair, subint.l, subint.r)
+	isnothing(J1_better) && return false
+	
+	subint.sub[J1_better ? first(i_pair) : last(i_pair)] = false
+	return true
+end
+
+@inbounds function simple_filter!(subint::interval, converged; cdcp...)
+	options = sum(subint.sub)
 	
 	max_left = maximum(enumerate(converged)) do (i, option)
-		!subinterval.sub[i] && return -Inf
+		!subint.sub[i] && return -Inf
 		
-		π(option.sub, subinterval.l)
+		cdcp[:obj](option.sub, subint.l)
 	end
 	
 	for (i, option) in enumerate(converged)
-		!subinterval.sub[i] && continue
+		!subint.sub[i] && continue
 		
-		(π(option.sub, subinterval.r) < max_left) && (subinterval.sub[i] = false)
+		(cdcp[:obj](option.sub, subint.r) < max_left) && (subint.sub[i] = false)
 	end
 	
-	return options > sum(subinterval.sub)
+	return options > sum(subint.sub)
 end
 
 function paste_adjacent!((cutoffs, policies))
@@ -122,53 +123,53 @@ function paste_adjacent!((cutoffs, policies))
 		
 	cutoffs, policies
 end
+
 function patch!((cutoffs, policies), int::interval)
-	left_in = insorted(int.l, cutoffs)
-	right_in = insorted(int.r, cutoffs)
+	l_in = insorted(int.l, cutoffs)
+	r_in = insorted(int.r, cutoffs)
 	
-	!any((left_in, right_in)) && begin
-		place = searchsortedfirst(cutoffs, int.l)
-		cutoffs[place] < int.r && error()
-		!isnothing(policies[place-1]) && error()
+	if (!l_in && !r_in)
+		k = searchsortedfirst(cutoffs, int.l)
+		cutoffs[k] < int.r && error()
+		!isnothing(policies[k-1]) && error()
 		
-		insert!(cutoffs, place, int.r)
-		insert!(policies, place, nothing)
+		insert!(cutoffs, k, int.r)
+		insert!(policies, k, nothing)
 		
-		insert!(cutoffs, place, int.l)
-		insert!(policies, place, int.sub)
+		insert!(cutoffs, k, int.l)
+		insert!(policies, k, int.sub)
 		
-		return place
+		return k
 	end
 	
-	all((left_in, right_in)) && begin
-		place = searchsortedfirst(cutoffs, int.l)
-		cutoffs[place+1] != int.r && error()
-		!isnothing(policies[place]) && error()
+	if (l_in && r_in)
+		k = searchsortedfirst(cutoffs, int.l)
+		cutoffs[k+1] != int.r && error()
+		!isnothing(policies[k]) && error()
 		
-		policies[place] = int.sub
-		
-		return place
+		policies[k] = int.sub
+		return k
 	end
 	
-	left_in && begin
-		place = searchsortedfirst(cutoffs, int.l)
-		!isnothing(policies[place]) && error()
-		cutoffs[place+1] < int.r && error()
+	l_in && begin
+		k = searchsortedfirst(cutoffs, int.l)
+		!isnothing(policies[k]) && error()
+		cutoffs[k+1] < int.r && error()
 		
-		insert!(cutoffs, place+1, int.r)
-		insert!(policies,  place, int.sub)
+		insert!(cutoffs, k+1, int.r)
+		insert!(policies,  k, int.sub)
 		
-		return place
+		return k
 	end
 	
-	right_in && begin
-		place = searchsortedfirst(cutoffs, int.l)
-		cutoffs[place-1] > int.l && error()
-		!isnothing(policies[place-1]) && error()
+	r_in && begin
+		k = searchsortedfirst(cutoffs, int.l)
+		cutoffs[k-1] > int.l && error()
+		!isnothing(policies[k-1]) && error()
 		
-		insert!(cutoffs, place, int.l)
-		insert!(policies, place, int.sub)
+		insert!(cutoffs, k, int.l)
+		insert!(policies, k, int.sub)
 		
-		return place
+		return k
 	end
 end

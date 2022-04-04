@@ -1,64 +1,49 @@
-function update!(int::interval, j::Int, zero_D_j_π, scdca, memo, emptyset)
+function update!(int::interval, j::Integer; cdcp...)
 	# above which j is in: worse case
-	worst = scdca ? int.sup : int.sub
-	z_in = get!(memo, (j, worst), zero_D_j_π(j, worst))
+	worst = cdcp[:scdca] ? int.sup : int.sub
 	
-	# below which j is out: best case
-	best = scdca ? int.sub : int.sup
-	z_out = get!(memo, (j, best), zero_D_j_π(j, best))
-	
-	# one new interval
-	@inbounds if z_in ≤ int.l
-		sub_new = int.sub[:]
-		sub_new[j] = true
-		return (interval(sub_new, int.sup, emptyset, int.l, int.r), )
-	elseif z_out ≥ int.r
-		sup_new = int.sup[:]
-		sup_new[j] = false
-		return (interval(int.sub, sup_new, emptyset, int.l, int.r), )
-	end
-	
-	@inbounds begin
-		aux_new = int.aux[:]
-		aux_new[j] = true
-	end
-	# two new intervals
-	@inbounds if (z_out ≤ int.l) && (int.l < z_in < int.r)
-		sub_new = int.sub[:]
-		sub_new[j] = true
-		return interval(int.sub, int.sup, aux_new, int.l, z_in), interval(sub_new, int.sup, emptyset, z_in, int.r)
-	elseif (z_in ≥ int.r) && (int.l < z_out < int.r)
-		sup_new = int.sup[:]
-		sup_new[j] = false
-		return interval(int.sub, sup_new, emptyset, int.l, z_out), interval(int.sub, int.sup, aux_new, z_out, int.r)
-	elseif int.l < z_in == z_out < int.r
-		sub_new = int.sub[:]
-		sub_new[j] = true
-		sup_new = int.sup[:]
-		sup_new[j] = false
-		return interval(int.sub, sup_new, emptyset, int.l, z_out), interval(sub_new, int.sup, emptyset, z_in, int.r)
+#	include on the whole interval: if D_j(worst, l) ≥ 0
+	if cdcp[:D_j_obj](j, worst, int.l) ≥ 0
+		j_in = setindex!(copy(int.sub), true, j)
+		return (interval(j_in, int.sup, cdcp[:emptyset], int.l, int.r), )
 	end
 
-	# three new intervals
-	@inbounds if int.l < z_out < z_in < int.r
-		sub_new = int.sub[:]
-		sub_new[j] = true
-		sup_new = int.sup[:]
-		sup_new[j] = false
-		return interval(int.sub, sup_new, emptyset, int.l, z_out), interval(int.sub, int.sup, aux_new, z_out, z_in), interval(sub_new, int.sup, emptyset, z_in, int.r)
-	end	
+#	no conclusion on inclusion for the whole interval: z_in ≥ r
+	cdcp[:D_j_obj](j, worst, int.r) ≤ 0 && return exclude_update!(int, j; cdcp...)
 	
-	# otherwise, no update
-	return (interval(int.sub, int.sup, aux_new, int.l, int.r), )
+#	otherwise, include for some: l < z_in < r
+	z_in = cdcp[:zero_D_j_obj](j, worst, int.l, int.r)
+	j_in = setindex!(copy(int.sub), true, j)
+	return (exclude_update!(interval(int.sub, int.sup, int.aux, int.l, z_in), j; cdcp...)..., interval(j_in, int.sup, cdcp[:emptyset], z_in, int.r))
 end
-function converge!((working, converged)::NTuple{2, Vector{interval}}, zero_D_j_π, scdca, memo, emptyset)
+
+function exclude_update!(int::interval, j::Integer; cdcp...)
+	best = cdcp[:scdca] ? int.sub : int.sup
+	
+#	exclude on the whole interval: z_out ≤ r
+	if cdcp[:D_j_obj](j, best, int.r) ≤ 0
+		j_out = setindex!(copy(int.sup), false, j)
+		return (interval(int.sub, j_out, cdcp[:emptyset], int.l, int.r), )
+	end
+	
+	j_aux = setindex!(copy(int.aux), true, j)
+#	no conclusion on exclusion for the whole interval: z_out ≤ l
+	cdcp[:D_j_obj](j, best, int.l) ≥ 0 && return (interval(int.sub, int.sup, j_aux, int.l, int.r), )
+	
+#	two new subintervals: exclude for some, then unsure for the rest
+	j_out = setindex!(copy(int.sup), false, j)
+	z_out = cdcp[:zero_D_j_obj](j, best, int.l, int.r)
+	return (interval(int.sub, j_out, cdcp[:emptyset], int.l, z_out), interval(int.sub, int.sup, j_aux, z_out, int.r))
+end
+
+function converge!(working, converged; cdcp...)
 	while !isempty(working)
 		int = pop!(working)
-		next = next_undetermined(int)
-		if iszero(next)
+		j = next_undetermined(int)
+		if iszero(j)
 			push!(converged, int)
 		else
-			append!(working, update!(int, next, zero_D_j_π, scdca, memo, emptyset))
+			append!(working, update!(int, j; cdcp...))
 		end
 	end
 	

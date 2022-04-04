@@ -1,38 +1,39 @@
 """
-	policy(C::Integer, scdca::Bool, π, equalise_π, [zero_D_j_π, memo])
+	policy(C::Integer; scdca::Bool, obj, equalise_obj, [D_j_obj, zero_D_j_obj, pairwise])
 
-Find the policy function for a combinatorial discrete choice problem over `C` choices and one dimension of heterogeneity with SCD-C from above if `scdca` is `true` (otherwise, from below) and SCD-T. The solver uses the objective function `π(J, z)`, which must accept as argument a Boolean vector with length `C` and the heterogeneous component `z` and the `equalise_π((J1, J2))` function, which identifies the `z` where the agent is indifferent between the pair `(J1, J2)`.
+Find the policy function for a combinatorial discrete choice problem over `C` choices and one dimension of heterogeneity with SCD-C from above if `scdca` is `true` (otherwise, from below) and SCD-T. The solver uses the objective function `obj(J, z)`, which must accept as argument a Boolean vector with length `C` and the heterogeneous component `z` and the `equalise_obj((J1, J2), l, r)` function, which identifies the `z` where the agent is indifferent between the pair `(J1, J2)`. The routine provides the interval `[l, r]` along which this search is performed; if the marginal type is not in the interval, it is sufficient to return `nothing`.
 
-The solver can optionally take `zero_D_j_π(j, J)`, a user-supplied marginal value function, which identifies the `z` where the marginal value of item `j` to set `J` is zero. If it is not provided, the solver automatically constructs one using the `equalise_π` function.
+The solver can optionally take `D_j_obj(j, J, z)` and `zero_D_j_obj(j, J, l, r)`, user-supplied functions. The first is the marginal value function, while the second identifies the `z` where the marginal value of item `j` to set `J` is zero. For the second, the solver provides the interval `[l, r]` within which this marginal type is located. If not provided, the solver automatically constructs these using the `equalise_obj` function.
 
-Optionally, the final brute force step can be partially memoised if the final argument `memo` is passed to either function method. `memo` must be a pre-allocated dictionary associating `(J1, J2)::NTuple{2, BitVector}` keys with `Float64` values.
+The final optional argument, `pairwise((J1, J2), l, r)` should be a function that determines whether `J1` is preferable to `J2` over the entire interval `[l, r]`. It should return `true` if it is, `false` if `J2` is, or `nothing`.
+
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
-function policy(C::Integer, scdca::Bool, π, equalise_π, zero_D_j_π = zero_D_j(C, equalise_π), dict...; show_time::Bool = false)
-	emptyset = falses(C)
-	int = interval(containers(C), -Inf, Inf)
-	working = Vector{interval}(undef, 0)
+function policy(C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C))
+	int = interval(_containers(C), -Inf, Inf)
+	working = [int; ]
 	converged = similar(working)
 	done = similar(working)
-	memo = Dict{Tuple{typeof(1), BitVector}, typeof(Inf)}()
+	empty!(converged)
+	empty!(done)
+	cdcp = (; scdca, obj, D_j_obj, zero_D_j_obj, equalise_obj, emptyset)
 	
 	# initial converge
-	push!(working, int)
-	t1 = @elapsed converge!((working, converged), zero_D_j_π, scdca, memo, emptyset)
+	t1 = @elapsed converge!(working, converged; cdcp...)
 	show_time && println("initial converge: ", t1, "\n")
 	
 	# branch if necessary: local optimal stored in done
-	t2 = @elapsed converge_branches!((working, converged, done), zero_D_j_π, scdca, memo, emptyset)
+	t2 = @elapsed converge_branches!(working, converged, done; cdcp...)
 	show_time && println("branching: ", t2, "\n")
 	
 	# brute force among local optima; final policy function stored in converged
 	policies = Vector{Union{Nothing, BitVector}}(nothing, 1)
 	cutoffs = Float64[-Inf, Inf]
-	policy_fn = (cutoffs, policies)
+	policy = (cutoffs, policies)
 	
-	t3 = @timed brute!(policy_fn, (working, converged, done), π, equalise_π, scdca, dict...)
+	t3 = @timed brute!(policy, working, converged, done; cdcp...)
 	show_time && println("brute forcing: ", t3)
 	
 	any(isnothing, policies) && @warn("Some intervals do not have associated policies.")
-	policy_fn
+	policy
 end

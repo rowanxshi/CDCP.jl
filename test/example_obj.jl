@@ -1,12 +1,12 @@
 import Random
 
-function π(J::AbstractArray{Bool}, z::Real, (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
+function _obj(J::AbstractArray{Bool}, z::Real, (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
 	δ = scdca ? 0.25 : 1.1
 	f = range(0.1, length = C, step = 0.1)
 	
 	profits = z*sum(c -> J[c]*var[c], 1:C)^δ - sum(c -> J[c]*f[c], 1:C)
 end
-function zero_D_j_π(j::Integer, J::AbstractArray{Bool}, (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
+function _zero_D_j_obj(j::Integer, J::AbstractArray{Bool}, (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
 	δ = scdca ? 0.25 : 1.1
 	f = range(0.1, length = C, step = 0.1)
 	
@@ -18,7 +18,7 @@ function zero_D_j_π(j::Integer, J::AbstractArray{Bool}, (C, var, scdca)::Tuple{
 	J[j] = bool_j
 	z = f[j]/z
 end
-function equalise_π((J1, J2)::NTuple{2, AbstractVector{Bool}}, (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
+function _equalise_obj((J1, J2), (C, var, scdca)::Tuple{Int, Vector{<: Real}, Bool})
 	δ = scdca ? 0.25 : 1.1
 	f = range(0.1, length = C, step = 0.1)
 	
@@ -28,10 +28,18 @@ end
 function initiate(C::Int = 10, scdca::Bool = false; seed::Int = 10, z0::Real = 1)
 	Random.seed!(seed)
 	var = rand(C)
-	π_params = (C, var, scdca)
+	params = (C, var, scdca)
 	
-	π_example(J, z::Real = z0) = π(J, z, π_params)
+	obj(J, z::Real = z0) = let params = params
+		_obj(J, z, params)
+	end
+	equalise_obj(pair, extras...) = let params = params
+		_equalise_obj(pair, params)
+	end
+	zero_D_j_obj(j, J, extras...) = let params = params
+		_zero_D_j_obj(j, J, params)
+	end
 	
-	functions = (π_example, equalise_π = (pair -> equalise_π(pair, π_params)), zero_D_j_π = ((j, J) -> zero_D_j_π(j, J, π_params)))
-	return functions, π_params
+	cdcp = (; scdca, obj, equalise_obj, zero_D_j_obj)
+	return cdcp, params
 end

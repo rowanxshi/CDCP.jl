@@ -1,4 +1,4 @@
-function next_undetermined((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: AbstractVector{Bool}, <: AbstractVector{Bool}})
+function next_undetermined((sub, sup, aux))
 	j = zero(first(eachindex(sub)))
 	for j in eachindex(sub)
 		(aux[j] || isequal(sub[j], sup[j])) && continue
@@ -7,7 +7,7 @@ function next_undetermined((sub, sup, aux)::Tuple{<: AbstractVector{Bool}, <: Ab
 	return j
 end
 
-function containers(C::Int)
+function _containers(C::Integer)
 	sub = falses(C)
 	sup = trues(C)
 	aux = falses(C)
