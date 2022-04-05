@@ -12,11 +12,9 @@ next_undetermined(int::interval) = next_undetermined((int.sub, int.sup, int.aux)
 
 function zero_D_j(equalise_obj, holder::AbstractVector{Bool})
 	zero_D_j_obj(j::Integer, J::AbstractVector{Bool}, extras...) = let equalise_obj = equalise_obj, holder = holder
-		@inbounds for i in eachindex(holder)
-			holder = setindex!(holder, J[i], i)
-		end
-		J2 = setindex!(holder, !J[j], j)
-		equalise_obj((J, J2))
+		J2 = copyto!(holder, J)
+		J2 = setindex!(J2, !J[j], j)
+		equalise_obj((J, J2), extras...)
 	end
 end
 
