@@ -68,7 +68,7 @@ end
 
 function brute_branch!(subint::interval, converged, z_equal, i_pair...; cdcp...)
 	subint_left = interval(subint.sub, subint.l, z_equal)
-	subint_right = interval(copy(subint.sub), z_equal, sub.r)
+	subint_right = interval(copy(subint.sub), z_equal, subint.r)
 
 	simple_filter!(left_subint, converged, subint.l, i_pair...; cdcp...)
 	simple_filter!(right_subint, converged, subint.r, i_pair...; cdcp...)

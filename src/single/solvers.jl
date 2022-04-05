@@ -55,7 +55,7 @@ end
 """
 	naive!(J::AbstractVector{Bool}; obj)
 
-Solve in-place a combinatorial discrete choice problem with simple brute force. (Generally used for testing or time-trial exercises.) The solver expectes a pre-allocated Boolean vector `J` and objective function `π(J)`.
+Solve in-place a combinatorial discrete choice problem with simple brute force. (Generally used for testing or time-trial exercises.) The solver expectes a pre-allocated Boolean vector `J` and objective function `obj(J)`.
 
 See also: [`naive`](@ref), [`solve!`](@ref), [`policy`](@ref)
 """
