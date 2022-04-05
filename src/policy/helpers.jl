@@ -16,7 +16,7 @@ function zero_D_j(equalise_obj, holder::AbstractVector{Bool})
 			holder = setindex!(holder, J[i], i)
 		end
 		J2 = setindex!(holder, !J[j], j)
-		equalise_π(J, J2)
+		equalise_obj(J, J2)
 	end
 end
 
