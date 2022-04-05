@@ -32,7 +32,7 @@ function brute!(policy, working, converged, done; cdcp...)
 		end
 	end
 #
-#	paste_adjacent!(policy)
+	paste_adjacent!(policy)
 end
 
 converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
