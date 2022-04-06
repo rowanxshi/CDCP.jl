@@ -10,7 +10,9 @@ function brute!(policy, working, converged, done; cdcp...)
 	fill!(policies, nothing)
 	
 	# go interval by interval
-	for k in eachindex(policies)
+	while any(isnothing, policies)
+		k = findfirst(isnothing, policies)
+		
 		# gather relevant decision sets into converged
 		empty!(converged)
 		for option in done
