@@ -58,7 +58,7 @@ converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
 
 		z_equal = cdcp[:equalise_obj](pair, subint.l, subint.r)
 
-		if isnothing(z_equal) || z_equal ≤ subint.l || z_equal ≥ subint.r
+		if isnothing(z_equal) || (z_equal ≤ subint.l) || (z_equal ≥ subint.r)
 			simple_filter!(subint, converged, (subint.l + subint.r)/2, i_J1, i_J2; cdcp...)
 		else
 			append!(working, brute_branch!(pop!(working), converged, z_equal, i_J1, i_J2; cdcp...))
@@ -78,16 +78,17 @@ end
 
 function simple_filter!(subint::interval, converged, z, i_pair...; cdcp...)
 	diff = cdcp[:obj](converged[first(i_pair)].sub, z) - cdcp[:obj](converged[last(i_pair)].sub, z)
-	subint.sub[signbit(diff) ? last(i_pair) : first(i_pair)] = false
+	J1_worse = signbit(diff)
+	subint.sub[J1_worse ? first(i_pair) : last(i_pair)] = false
 	return true
 end
 
 function simple_filter!(subint::interval, converged, i_pair...; cdcp...)
 	pair = converged[first(i_pair)].sub, converged[last(i_pair)].sub
-	J1_better = cdcp[:pairwise](pair, subint.l, subint.r)
-	isnothing(J1_better) && return false
+	J1_worse = cdcp[:pairwise](pair, subint.l, subint.r)
+	isnothing(J1_worse) && return false
 	
-	subint.sub[J1_better ? first(i_pair) : last(i_pair)] = false
+	subint.sub[J1_worse ? first(i_pair) : last(i_pair)] = false
 	return true
 end
 
@@ -145,7 +146,7 @@ function patch!((cutoffs, policies), int::interval)
 	if (l_in && r_in)
 		k = searchsortedfirst(cutoffs, int.l)
 		cutoffs[k+1] != int.r && error()
-		!isnothing(policies[k]) && error()
+		!isnothing(policies[k]) && error("patching policy fn with $int but it already has strategy $(policies[k])")
 		
 		policies[k] = int.sub
 		return k
