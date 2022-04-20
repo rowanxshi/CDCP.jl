@@ -13,8 +13,15 @@ function update!(int::interval, j::Integer; cdcp...)
 		return exclude_update!(int, j; cdcp...)
 	end
 	
-#	otherwise, include for some: l < z_in < r
+#	otherwise, use zero_D_j_obj
 	z_in = cdcp[:zero_D_j_obj](j, worst, int.l, int.r)
+	if isnothing(z_in)
+		add_j = cdcp[:D_j_obj](j, worse, middle(int)) ≥ 0
+		!add_j && return exclude_update!(int, j; cdcp...)
+		j_in = setindex!(copy(int.sub), true, j)
+		return (interval(j_in, int.sup, cdcp[:emptyset], int.l, int.r), )
+	end
+	# include for some: l < z_in < r
 	j_in = setindex!(copy(int.sub), true, j)
 	return (exclude_update!(interval(int.sub, int.sup, int.aux, int.l, z_in), j; cdcp...)..., interval(j_in, int.sup, cdcp[:emptyset], z_in, int.r))
 end
@@ -34,9 +41,16 @@ function exclude_update!(int::interval, j::Integer; cdcp...)
 		return (interval(int.sub, int.sup, j_aux, int.l, int.r), )
 	end
 	
-#	two new subintervals: exclude for some, then unsure for the rest
-	j_out = setindex!(copy(int.sup), false, j)
+#	otherwise, use zero_D_j_obj
 	z_out = cdcp[:zero_D_j_obj](j, best, int.l, int.r)
+	if isnothing(z_out)
+		drop_j = cdcp[:D_j_obj](j, best, middle(int)) ≤ 0
+		!drop_j && return (interval(int.sub, int.sup, j_aux, int.l, int.r), )
+		j_out = setindex!(copy(int.sup), false, j)
+		return (interval(int.sub, j_out, cdcp[:emptyset], int.l, int.r), )
+	end
+	# exclude for some, then unsure for the rest
+	j_out = setindex!(copy(int.sup), false, j)
 	return (interval(int.sub, j_out, cdcp[:emptyset], int.l, z_out), interval(int.sub, int.sup, j_aux, z_out, int.r))
 end
 

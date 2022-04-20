@@ -54,10 +54,6 @@ converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
 		i_pair = (i_J1, i_J2)
 		pair = (J1, J2)
 
-		if haskey(cdcp, :pairwise)
-			simple_filter!(subint, converged, i_J1, i_J2; cdcp...) && continue
-		end
-
 		z_equal = cdcp[:equalise_obj](pair, subint.l, subint.r)
 
 		if isnothing(z_equal) || (z_equal ≤ subint.l) || (z_equal ≥ subint.r)
@@ -81,15 +77,6 @@ end
 function simple_filter!(subint::interval, converged, z, i_pair...; cdcp...)
 	diff = cdcp[:obj](converged[first(i_pair)].sub, z) - cdcp[:obj](converged[last(i_pair)].sub, z)
 	J1_worse = signbit(diff)
-	subint.sub[J1_worse ? first(i_pair) : last(i_pair)] = false
-	return true
-end
-
-function simple_filter!(subint::interval, converged, i_pair...; cdcp...)
-	pair = converged[first(i_pair)].sub, converged[last(i_pair)].sub
-	J1_worse = cdcp[:pairwise](pair, subint.l, subint.r)
-	isnothing(J1_worse) && return false
-	
 	subint.sub[J1_worse ? first(i_pair) : last(i_pair)] = false
 	return true
 end

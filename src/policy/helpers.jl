@@ -22,3 +22,11 @@ function branch(int::interval)
 	((a,b,c), (d,e,f)) = branch((int.sub, int.sup, int.aux))
 	return interval(a, b, c, int.l, int.r), interval(d, e, f, int.l, int.r)
 end
+
+function middle(l, r)
+	all(isinfinite, (l, r)) && return zero(l)
+	all(isfinite, (l, r)) && return (l + r)/2
+	isfinite(l) && return 2l
+	isfinite(r) && return r/2
+end
+middle(int::interval) = middle(int.l, int.r)
