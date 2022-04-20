@@ -24,7 +24,7 @@ function branch(int::interval)
 end
 
 function middle(l, r)
-	all(isinfinite, (l, r)) && return zero(l)
+	all(isinf, (l, r)) && return zero(l)
 	all(isfinite, (l, r)) && return (l + r)/2
 	isfinite(l) && return 2l
 	isfinite(r) && return r/2
