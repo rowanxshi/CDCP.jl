@@ -16,7 +16,7 @@ function update!(int::interval, j::Integer; cdcp...)
 #	otherwise, use zero_D_j_obj
 	z_in = cdcp[:zero_D_j_obj](j, worst, int.l, int.r)
 	if isnothing(z_in)
-		add_j = cdcp[:D_j_obj](j, worse, middle(int)) ≥ 0
+		add_j = cdcp[:D_j_obj](j, worst, middle(int)) ≥ 0
 		!add_j && return exclude_update!(int, j; cdcp...)
 		j_in = setindex!(copy(int.sub), true, j)
 		return (interval(j_in, int.sup, cdcp[:emptyset], int.l, int.r), )
