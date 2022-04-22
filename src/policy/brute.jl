@@ -57,7 +57,7 @@ converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
 		z_equal = cdcp[:equalise_obj](pair, subint.l, subint.r)
 
 		if isnothing(z_equal) || (z_equal ≤ subint.l) || (z_equal ≥ subint.r)
-			simple_filter!(subint, converged, (subint.l + subint.r)/2, i_J1, i_J2; cdcp...)
+			simple_filter!(subint, converged, middle(subint), i_J1, i_J2; cdcp...)
 		else
 			append!(working, brute_branch!(pop!(working), converged, z_equal, i_J1, i_J2; cdcp...))
 		end
