@@ -5,8 +5,6 @@ Find the policy function for a combinatorial discrete choice problem over `C` ch
 
 The solver can optionally take `D_j_obj(j, J, z)` and `zero_D_j_obj(j, J, l, r)`, user-supplied functions. The first is the marginal value function, while the second identifies the `z` where the marginal value of item `j` to set `J` is zero. For the second, the solver provides the interval `[l, r]` within which this marginal type is located. It is sufficient to return `nothing` is the marginal type is not within the interval. If not provided, the solver automatically constructs these using the `equalise_obj` function.
 
-Finally, the solver optionally take a minimum type `z_min` and maximum type `z_max` over which to solve the policy function. These extrema default to `-Inf` and `Inf` if not supplied.
-
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
 function policy(C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), z_min = -Inf, z_max = Inf)
