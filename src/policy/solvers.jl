@@ -1,5 +1,5 @@
 """
-	policy(C::Integer; scdca::Bool, obj, equalise_obj, [D_j_obj, zero_D_j_obj, z_min, z_max])
+	policy(C::Integer; scdca::Bool, obj, equalise_obj, [D_j_obj, zero_D_j_obj])
 
 Find the policy function for a combinatorial discrete choice problem over `C` choices and one dimension of heterogeneity with SCD-C from above if `scdca` is `true` (otherwise, from below) and SCD-T. The solver uses the objective function `obj(J, z)`, which must accept as argument a Boolean vector with length `C` and the heterogeneous component `z` and the `equalise_obj((J1, J2), l, r)` function, which identifies the `z` where the agent is indifferent between the pair `(J1, J2)`. The routine provides the interval `[l, r]` along which this search is performed; if the marginal type is not in the interval, it is sufficient to return `nothing`.
 
@@ -7,8 +7,8 @@ The solver can optionally take `D_j_obj(j, J, z)` and `zero_D_j_obj(j, J, l, r)`
 
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
-function policy(C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), z_min = -Inf, z_max = Inf)
-	int = interval(_containers(C), z_min, z_max)
+function policy(C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C))
+	int = interval(_containers(C), -Inf, Inf)
 	working = [int; ]
 	converged = similar(working)
 	done = similar(working)
