@@ -7,32 +7,38 @@ The solver can optionally take `D_j_obj(j, J, z)` and `zero_D_j_obj(j, J, l, r)`
 
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
-function policy(C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C))
-	#int = interval(_containers(C), -Inf, Inf)
-	#working = [int; ]
-	#converged = similar(working)
-	#done = similar(working)
-	#empty!(converged)
-	#empty!(done)
-	#cdcp = (; scdca, obj, D_j_obj, zero_D_j_obj, equalise_obj, emptyset)
+function policy(C::Integer; e...)
+	working = Vector{interval{Float64, Float64}}(undef, 0)
+	converged = similar(working)
+	done = similar(working)
 	
-	## initial converge
-	#t1 = @elapsed converge!(working, converged; cdcp...)
-	#show_time && println("initial converge: ", t1, "\n")
+	policies = Vector{Union{Nothing, BitVector}}(nothing, 1)
+	cutoffs = Float64[-Inf, Inf]
 	
-	## branch if necessary: local optimal stored in done
-	#t2 = @elapsed converge_branches!(working, converged, done; cdcp...)
-	#show_time && println("branching: ", t2, "\n")
+	policy!((cutoffs, policies), (working, converged, done), C; e...)
+end
+
+function policy!((cutoffs, policies), (working, converged, done), C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C))
+	empty!.((working, converged, done))
+	int = interval(_containers(C), -Inf, Inf)
+	push!(working, int)
 	
-	## brute force among local optima; final policy function stored in converged
-	#policies = Vector{Union{Nothing, BitVector}}(nothing, 1)
-	#cutoffs = Float64[-Inf, Inf]
-	#policy = (cutoffs, policies)
+	cdcp = (; scdca, obj, D_j_obj, zero_D_j_obj, equalise_obj, emptyset)
 	
-	#t3 = @timed brute!(policy, working, converged, done; cdcp...)
-	#show_time && println("brute forcing: ", t3)
+	# initial converge
+	t1 = @elapsed converge!(working, converged; cdcp...)
+	show_time && @info "initial converge: $t1"
 	
-	#any(isnothing, policies) && @warn("Some intervals do not have associated policies.")
-	#policy
-	1
+	# branch if necessary: local optimal stored in done
+	t2 = @elapsed converge_branches!(working, converged, done; cdcp...)
+	show_time && @info "branching: $t2"
+	
+	# brute force among local optima; final policy function stored in converged
+	policy = (cutoffs, policies)
+	
+	t3 = @timed brute!(policy, working, converged, done; cdcp...)
+	show_time && @info "brute forcing: $t3"
+	
+	any(isnothing, policies) && @warn("Some intervals do not have associated policies.")
+	policy
 end
