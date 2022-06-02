@@ -14,6 +14,6 @@ include("./policy/branching.jl")
 include("./policy/brute.jl")
 include("./policy/solvers.jl")
 
-export solve!, solve, policy
+export solve!, solve, policy, policy!
 
 end
