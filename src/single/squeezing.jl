@@ -2,7 +2,7 @@ function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	# for excluding: look at best case
 	exclude = (scdca && D_j_obj(j, sub) ≤ 0) || (!scdca && D_j_obj(j, sup) < 0)
 	if exclude
-		sup = setindex!(sub, false, j)
+		sup = setindex!(sup, false, j)
 		aux = fill!(aux, false)
 		return (sub, sup, aux)
 	end
