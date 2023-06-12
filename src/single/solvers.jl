@@ -7,11 +7,13 @@ The solver can optionally take `D_j_obj(j, J)`, a user-supplied marginal value f
 
 See also: [`solve`](@ref), [`policy`](@ref)
 """
-function solve!(Vs ; scdca::Bool, obj, D_j_obj = D_j(obj), containers = _containers(Vs))
+function solve!(Vs; scdca::Bool, obj, D_j_obj = D_j(obj), containers = _containers(Vs), restart::Bool = true)
 	sub, sup, aux = Vs
-	sub = fill!(sub, false)
-	sup = fill!(sup, true)
-	aux = fill!(aux, false)
+	if restart
+		sub = fill!(sub, false)
+		sup = fill!(sup, true)
+		aux = fill!(aux, false)
+	end
 
 	# squeeze
 	(sub, sup, aux) = converge!((sub, sup, aux); D_j_obj, scdca)

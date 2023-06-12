@@ -18,10 +18,12 @@ function policy(C::Integer; e...)
 	policy!((cutoffs, policies), (working, converged, done), C; e...)
 end
 
-function policy!((cutoffs, policies), (working, converged, done), C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C))
-	empty!.((working, converged, done))
-	int = interval(_containers(C), -Inf, Inf)
-	push!(working, int)
+function policy!((cutoffs, policies), (working, converged, done), C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj = D_j(obj), zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), restart::Bool = true)
+	if restart
+		empty!.((working, converged, done))
+		int = interval(_containers(C), -Inf, Inf)
+		push!(working, int)
+	end
 	
 	cdcp = (; scdca, obj, D_j_obj, zero_D_j_obj, equalise_obj, emptyset)
 	
