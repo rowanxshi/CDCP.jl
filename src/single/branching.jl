@@ -5,7 +5,7 @@ function branch((sub, sup, aux))
 	j = next_undetermined((sub, sup, aux_in))
 	
 	sub_in = setindex!(copy(sub), true, j)
-	sup_out = setindex!(copy(sub), false, j)
+	sup_out = setindex!(copy(sup), false, j)
 	
 	return (sub_in, sup, aux_in), (sub, sup_out, aux)
 end
