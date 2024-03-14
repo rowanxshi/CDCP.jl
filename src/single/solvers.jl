@@ -27,17 +27,9 @@ function solve!(Vs; scdca::Bool, obj, D_j_obj = D_j(obj), containers = _containe
 	converge_branches!((working, converged); D_j_obj, scdca)
 
 	# among results in converged, choose best
-	i_argmax = 0; max_prof = -Inf
-	for (i, option) in enumerate(converged)
-		prof = obj(first(option))
-		if prof > max_prof
-			max_prof = prof
-			i_argmax = i
-		end
-	end
-	argmax = first(converged[i_argmax])
-	sub = copyto!(sub, argmax)
-	sup = copyto!(sup, argmax)
+	solution = argmax(obj ∘ first, converged) |> first
+	sub = copyto!(sub, solution)
+	sup = copyto!(sup, solution)
 end
 
 """
