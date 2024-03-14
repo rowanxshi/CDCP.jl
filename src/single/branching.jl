@@ -10,14 +10,14 @@ function branch((sub, sup, aux))
 	return (sub_in, sup, aux_in), (sub, sup_out, aux)
 end
 
-function converge_branches!((working, converged); cdcp...)
+function converge_branches!((working, converged); converge!_kw...)
 	while !isempty(working)
 		(sub, sup, aux) = pop!(working)
 		if isequal(sub, sup)
 			push!(converged, (sub, sup, aux))
 			continue
 		end
-		(sub, sup, aux) = converge!((sub, sup, aux); cdcp...)
+		(sub, sup, aux) = converge!((sub, sup, aux); converge!_kw...)
 		isequal(sub, sup) ? push!(converged, (sub, sup, aux)) : append!(working, collect(branch((sub, sup, aux))))
 	end
 	return converged

@@ -19,11 +19,11 @@ function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	return (sub, sup, aux)
 end
 
-function converge!(Vs; D_j_obj, scdca::Bool)
+function converge!(Vs; kw...)
 	@inbounds while true
 		j = next_undetermined(Vs)
 		iszero(j) && break
-		Vs = update!(Vs, j; D_j_obj, scdca)
+		Vs = update!(Vs, j; kw...)
 	end
 	
 	Vs
