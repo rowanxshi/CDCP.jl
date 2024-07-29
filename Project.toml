@@ -1,8 +1,28 @@
-name = "CDCP"
+name = "CombinatorialDiscreteChoice"
 uuid = "e882dc6a-cb4b-4795-8680-b0a27742e84e"
 authors = ["Rowan <37481598+rowanxshi@users.noreply.github.com>"]
 version = "0.1.0"
 
 [deps]
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[weakdeps]
+Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
+
+[extensions]
+CDCPRootsExt = "Roots"
+
+[compat]
+CommonSolve = "0.2"
+Roots = "1.4, 2"
+StaticArrays = "1"
+julia = "1.6"
+
+[extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Random", "Roots", "Test"]
