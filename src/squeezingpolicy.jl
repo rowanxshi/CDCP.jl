@@ -66,11 +66,13 @@ struct SqueezingPolicyTrace{Z}
 	s::ItemState
 end
 
-struct SqueezingPolicy{Z,A,F1,F2,O,TR} <: CDCPSolver
+struct SqueezingPolicy{Z,A,AO,F1,F2,O,TR} <: CDCPSolver
 	scdca::Bool
+    allu::A
     pool::Vector{StateChoice{Z,A}}
     seen::Set{StateChoice{Z,A}}
     branching::Vector{Int}
+    lookup_zero_margin::Dict{Tuple{Int,AO},Z}
     zero_margin::F1
     equal_obj::F2
     obj2::O
@@ -79,7 +81,7 @@ struct SqueezingPolicy{Z,A,F1,F2,O,TR} <: CDCPSolver
     trace::TR
 end
 
-# A special value in cache1 for indicating no new cutoff
+# A special value for indicating no new cutoff
 const _nextunknown = (Inf, Inf, 0, undetermined)
 
 function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
@@ -88,18 +90,21 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
 	S = length(obj.x)
 	if x0 === nothing
 		if obj.x isa SVector
-        	x = Policy([zbounds[1]], [SVector{S, ItemState}(ntuple(i->undetermined, S))],
-                zbounds[2])
+            allu = SVector{S, ItemState}(ntuple(i->undetermined, S))
+        	x = Policy([zbounds[1]], [allu], zbounds[2])
     	else
-            x = Policy([zbounds[1]], [fill(undetermined, S)], zbounds[2])
+            allu = fill(undetermined, S)
+            x = Policy([zbounds[1]], [allu], zbounds[2])
 		end
 	else
 		x = x0
     end
 	A = eltype(x.xs)
     tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
-    pool = StateChoice{Z,A}[x[1]]
-	return SqueezingPolicy(scdca, pool, Set(pool), Int[1],
+    pool = [x[1]]
+    lookup_zero_margin = Dict{Tuple{Int,typeof(obj.x)},Z}()
+	return SqueezingPolicy(scdca, allu, pool, Set(pool),
+        [1], lookup_zero_margin,
         zero_margin, equal_obj, deepcopy(obj), Ref(0), Ref(0), tr), x
 end
 
@@ -111,10 +116,16 @@ _setitemstate(x::StateChoice, s::ItemState, i::Int) =
 
 function squeeze!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
 	obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
+    lookup = p.solver.lookup_zero_margin
     obj = _setchoice(obj, scdca ? SetSup(x) : SetSub(x))
-    z, obj = p.solver.zero_margin(obj, i, x.lb, x.ub)
-    p.solver.zero_margin_call[] += 1
-    p.obj = obj
+    key = (i, obj.x)
+    z = get(lookup, key, nothing)
+    if z === nothing
+        z, obj = p.solver.zero_margin(obj, i, x.lb, x.ub)
+        lookup[key] = z
+        p.solver.zero_margin_call[] += 1
+        p.obj = obj
+    end
     if z <= x.lb # Include the whole interval
         x = _squeeze(x, included, i)
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, included))
@@ -137,10 +148,16 @@ end
 
 function squeeze_exclude!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
     obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
+    lookup = p.solver.lookup_zero_margin
     obj = _setchoice(obj, scdca ? SetSub(x) : SetSup(x))
-    z, obj = p.solver.zero_margin(obj, i, x.lb, x.ub)
-    p.solver.zero_margin_call[] += 1
-    p.obj = obj
+    key = (i, obj.x)
+    z = get(lookup, key, nothing)
+    if z === nothing
+        z, obj = p.solver.zero_margin(obj, i, x.lb, x.ub)
+        lookup[key] = z
+        p.solver.zero_margin_call[] += 1
+        p.obj = obj
+    end
     if z >= x.ub # Exclude the whole interval
         x = _squeeze(x, excluded, i)
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, excluded))
@@ -217,7 +234,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy})
             push!(branching, length(pool))
             # Must make sure no interval is left out
             if ub < ub0
-                sc = StateChoice(ub, ub0, _squeezenext(x.x, undetermined, i))
+                sc = StateChoice(ub, ub0, p.solver.allu)
                 push!(pool, sc)
                 push!(branching, length(pool))
             end

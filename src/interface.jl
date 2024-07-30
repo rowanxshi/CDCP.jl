@@ -70,3 +70,6 @@ function init(::Type{M}, obj, S::Integer, args...;
     return CDCP{typeof(solver), typeof(obj), typeof(x), valtype}(
 		solver, obj, x, convert(valtype,-Inf), maxfcall, inprogress)
 end
+
+solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver =
+    solve!(init(M, args...; kwargs...))
