@@ -12,11 +12,23 @@ struct SqueezingTrace{V,TF}
 	fx::TF
 end
 
+function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
+	if @generated
+		ex = :(())
+		for i in 1:S
+			push!(ex.args, :(s))
+		end
+		return :(SVector{S,ItemState}($ex))
+	else
+		return SVector{S,ItemState}(ntuple(i->s, S))
+	end
+end
+
 function _init(::Type{<:Squeezing}, obj, scdca::Bool;
 		z=nothing, trace::Bool=false, valtype::Type=Float64, kwargs...)
 	S = length(obj.x)
 	if obj.x isa SVector
-        x = SVector{S, ItemState}(ntuple(i->undetermined, S))
+        x = _fillstate(SVector{S,ItemState}, undetermined)
     else
         x = fill(undetermined, S)
     end
@@ -52,20 +64,30 @@ end
 _setchoice(obj::Objective{<:Any,A}, x::A) where A =
 	Objective(obj.f, x, obj.fcall)
 
-struct Squeeze{A}
-	x::A
-	snew::ItemState
-	k::Int
+function _squeeze(x::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
+	if i == k
+		return s
+	else
+		@inbounds xi = x[i]
+		if xi == aux
+			return undetermined
+		else
+			return xi
+		end
+	end
 end
 
-function (sq::Squeeze)(i::Int)
-	s = sq.x[i]
-	# The order of the ifelse matters for branch
-	return ifelse(i == sq.k, sq.snew, ifelse(s == aux, undetermined, s))
+function _squeeze(x::SVector{S,ItemState}, s::ItemState, k::Int) where S
+	if @generated
+		ex = :(())
+		for i in 1:S
+			push!(ex.args, :(_squeeze(x, s, k, $i)))
+		end
+		return :(SVector{S,ItemState}($ex))
+	else
+		return SVector{S,ItemState}(ntuple(i->_squeeze(x, s, k, i), S))
+	end
 end
-
-_squeeze(x::SVector{S,ItemState}, s::ItemState, i::Int) where S =
-	SVector{S,ItemState}(ntuple(Squeeze(x, s, i), S))
 
 _setitemstate(x::SVector{S,ItemState}, s::ItemState, i::Int) where S = setindex(x, s, i)
 
@@ -175,7 +197,7 @@ function _reinit!(p::CDCP{<:Squeezing})
 	end
 	if p.x isa SVector
 		S = length(p.x)
-		p.x = SVector{S,ItemState}(ntuple(i->undetermined, S))
+		p.x = _fillstate(SVector{S,ItemState}, undetermined)
 	else
 		fill!(p.x, undetermined)
 	end

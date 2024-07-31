@@ -90,7 +90,7 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
 	S = length(obj.x)
 	if x0 === nothing
 		if obj.x isa SVector
-            allu = SVector{S, ItemState}(ntuple(i->undetermined, S))
+            allu = _fillstate(SVector{S,ItemState}, undetermined)
         	x = Policy([zbounds[1]], [allu], zbounds[2])
     	else
             allu = fill(undetermined, S)
@@ -246,9 +246,6 @@ _lb(x::StateChoice) = x.lb
 # By default, assume any type is valid unless it contains Inf/-Inf
 checktype(::Objective, z) = !(Inf in z || -Inf in z)
 
-_excludeall(::Type{SVector{S,ItemState}}) where S =
-    SVector{S,ItemState}(ntuple(i->excluded, S))
-
 function combine_branch!(p::CDCP{<:SqueezingPolicy})
     obj, pool = p.obj, p.solver.pool
     sort!(pool, by=_lb)
@@ -259,7 +256,7 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
     # Handle the case where lb is something like -Inf
     if !checktype(obj, z)
         push!(cutoffs, z)
-        push!(xs, _excludeall(eltype(xs)))
+        push!(xs, _fillstate(eltype(xs), excluded))
         for x in pool
             z1 = x.lb
             if z1 > z
