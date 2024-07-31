@@ -50,7 +50,7 @@ function (d::DiffObj)(z, fcall)
     return f2 - f1
 end
 
-struct Equal_Obj{A,M, KW<:NamedTuple}
+struct Equal_Obj{A,M,KW<:NamedTuple}
     m::M
     kwargs::KW
     fcall::RefValue{Int}
@@ -99,12 +99,9 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
 	else
 		x = x0
     end
-	A = eltype(x.xs)
     tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
-    pool = [x[1]]
-    lookup_zero_margin = Dict{Tuple{Int,typeof(obj.x)},Z}()
-	return SqueezingPolicy(scdca, allu, pool, Set(pool),
-        [1], lookup_zero_margin,
+	return SqueezingPolicy(scdca, allu, [x[1]], Set([x[1]]), [1],
+        Dict{Tuple{Int,typeof(obj.x)},Z}(),
         zero_margin, equal_obj, deepcopy(obj), Ref(0), Ref(0), tr), x
 end
 
@@ -117,7 +114,7 @@ _setitemstate(x::StateChoice, s::ItemState, i::Int) =
 function squeeze!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
 	obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
     lookup = p.solver.lookup_zero_margin
-    obj = _setchoice(obj, scdca ? SetSup(x) : SetSub(x))
+    obj = _setchoice(obj, scdca ? setsup(x.x) : setsub(x.x))
     key = (i, obj.x)
     z = get(lookup, key, nothing)
     if z === nothing
@@ -149,7 +146,7 @@ end
 function squeeze_exclude!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
     obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
     lookup = p.solver.lookup_zero_margin
-    obj = _setchoice(obj, scdca ? SetSub(x) : SetSup(x))
+    obj = _setchoice(obj, scdca ? setsub(x.x) : setsup(x.x))
     key = (i, obj.x)
     z = get(lookup, key, nothing)
     if z === nothing
@@ -180,16 +177,17 @@ function branch(x::StateChoice, i::Int)
 	return xin, xex
 end
 
-struct SqueezeNext
-	snew::ItemState
-	k::Int
+function _squeezenext(::SVector{S}, s::ItemState, k::Int) where S
+    if @generated
+        ex = :(())
+        for i in 1:S
+            push!(ex.args, :(ifelse($i==k, s, undetermined)))
+        end
+        return :(SVector{S,ItemState}($ex))
+    else
+        SVector{S,ItemState}(ntuple(i->ifelse(i==k, s, undetermined), S))
+    end
 end
-
-# Do not assume any other value based on the last cutoff
-(sq::SqueezeNext)(i::Int) = ifelse(i == sq.k, sq.snew, undetermined)
-
-_squeezenext(::SVector{S,ItemState}, s::ItemState, i::Int) where S =
-	SVector{S,ItemState}(ntuple(SqueezeNext(s, i), S))
 
 function squeeze!(p::CDCP{<:SqueezingPolicy})
 	S = length(p.x.xs[1])
@@ -285,7 +283,7 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
             end
             if x.lb <= z < x.ub
                 obj.fcall < p.maxfcall || return maxfcall_reached
-                obj = _setchoice(obj, SetSub(x))
+                obj = _setchoice(obj, setsub(x.x))
                 fx1, obj = value(obj, z)
                 if fx1 > fx
                     fx = fx1
@@ -297,8 +295,8 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
             push!(cutoffs, z)
             push!(xs, xmax)
         elseif xmax != xs[end]
-            obj = _setchoice(obj, SetSub(xs[end]))
-            obj2 = _setchoice(p.solver.obj2, SetSub(xmax))
+            obj = _setchoice(obj, setsub(xs[end]))
+            obj2 = _setchoice(p.solver.obj2, setsub(xmax))
             lastz = cutoffs[end]
             znew, obj = p.solver.equal_obj(obj, obj2, lastz, z)
             p.solver.equal_obj_call[] += 1

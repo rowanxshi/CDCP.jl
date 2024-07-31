@@ -25,20 +25,32 @@ function _init(::Type{<:Squeezing}, obj, scdca::Bool;
 	return Squeezing(scdca, A[], z, tr), x
 end
 
-struct SetSub{A}
-	x::A
+function setsub(x::SVector{S,ItemState}) where S
+	if @generated
+		ex = :(())
+		for i in 1:S
+			push!(ex.args, :(x[$i] == included))
+		end
+		return :(SVector{S,Bool}($ex))
+	else
+		return SVector{S,Bool}(ntuple(i->x[i] == included, S))
+	end
 end
 
-(s::SetSub)(i::Int) = s.x[i] == included
-
-struct SetSup{A}
-	x::A
+function setsup(x::SVector{S,ItemState}) where S
+	if @generated
+		ex = :(())
+		for i in 1:S
+			push!(ex.args, :(x[$i] != excluded))
+		end
+		return :(SVector{S,Bool}($ex))
+	else
+		return SVector{S,Bool}(ntuple(i->x[i] != excluded, S))
+	end
 end
 
-(s::SetSup)(i::Int) = s.x[i] != excluded
-
-_setchoice(obj::Objective{<:Any,SVector{S,Bool}}, ss::Union{<:SetSub,<:SetSup}) where S =
-	Objective(obj.f, SVector{S,Bool}(ntuple(ss, S)), obj.fcall)
+_setchoice(obj::Objective{<:Any,A}, x::A) where A =
+	Objective(obj.f, x, obj.fcall)
 
 struct Squeeze{A}
 	x::A
@@ -61,11 +73,11 @@ function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
 	obj, scdca, z, tr = p.obj, p.solver.scdca, p.solver.z, p.solver.trace
     # For excluding: look at the best case
 	if scdca
-		obj = _setchoice(obj, SetSub(x))
+		obj = _setchoice(obj, setsub(x))
 		f1, f0, obj = margin(obj, i, z)
 		exclude = f1 - f0 <= 0
 	else
-		obj = _setchoice(obj, SetSup(x))
+		obj = _setchoice(obj, setsup(x))
 		f1, f0, obj = margin(obj, i, z)
 		exclude = f1 - f0 < 0
 	end
@@ -78,11 +90,11 @@ function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
 
 	# For including: look at the worst case
 	if scdca
-		obj = _setchoice(obj, SetSup(x))
+		obj = _setchoice(obj, setsup(x))
 		f1, f0, obj = margin(obj, i, z)
 		include = f1 - f0 > 0
 	else
-		obj = _setchoice(obj, SetSub(x))
+		obj = _setchoice(obj, setsub(x))
 		f1, f0, obj = margin(obj, i, z)
 		include = f1 - f0 >= 0
 	end
