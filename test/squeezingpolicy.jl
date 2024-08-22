@@ -18,7 +18,8 @@ end
 @testset "SqueezingPolicy" begin
     f = TestObj(1.5, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, false, zero_margin, equal_obj, (-Inf, Inf))
+    p = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
     @time solve!(p);
 
     @test p.x.cutoffs ≈ [-Inf, 0.4705380164247549, 0.5811985707132651, 0.5910258492101572,
@@ -29,9 +30,15 @@ end
     @test findall(p.x.xs[5] .== included) == [1:6...,8,9]
     @test findall(p.x.xs[6] .== included) == [1:6...,8:10...]
 
+    # Use Default_Zero_Margin
+    p1 = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf))
+    @time solve!(p1);
+    @test p1.x == p.x
+
     f = TestObj(0.25, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, true, zero_margin, equal_obj, (-Inf, Inf))
+    p = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
     @time solve!(p);
 
     @test p.x.cutoffs ≈ [-Inf, 0.14148816109753773, 1.2729439592296217, 2.36954935176131,
@@ -50,7 +57,8 @@ end
 
     f = TestObj(0.75, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p1 = init(SqueezingPolicy, obj, 10, true, zero_margin, equal_obj, (-Inf, Inf))
+    p1 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
     @time solve!(p1);
 
     @test p1.x.cutoffs ≈ [-Inf, 0.2832437310101619, 0.6857035921447168, 0.8760196369273678,
@@ -61,7 +69,8 @@ end
     v1 = rand(10)
     f = TestObj(1.2, 10, v1)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, false, zero_margin, equal_obj, (-Inf, Inf))
+    p = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
     @time solve!(p);
 
     # Check results from the single-type problem at points near cutoffs
@@ -82,7 +91,8 @@ end
 
     f = TestObj(0.5, 10, v1)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, true, zero_margin, equal_obj, (-Inf, Inf))
+    p = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
     @time solve!(p);
 
     for k in 2:length(p.x.cutoffs)

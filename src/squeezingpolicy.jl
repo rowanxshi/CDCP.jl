@@ -17,26 +17,6 @@ Base.size(p::Policy) = size(p.xs)
 Base.@propagate_inbounds Base.getindex(p::Policy, i::Int) =
 	StateChoice(p.cutoffs[i], i+1>length(p.xs) ? p.ub : p.cutoffs[i+1], p.xs[i])
 
-struct Margin_i{Obj}
-    obj::Obj
-    i::Int
-end
-
-function (m::Margin_i)(z, fcall)
-    # x should have been set
-    f1, f0, obj = margin(m.obj, m.i, z)
-    fcall[] += 2
-    return f1 - f0
-end
-
-struct Zero_Margin{M, KW<:NamedTuple}
-    m::M
-    kwargs::KW
-    fcall::RefValue{Int}
-end
-
-Zero_Margin(m, kwargs::NamedTuple=NamedTuple()) = Zero_Margin(m, kwargs, Ref(0))
-
 struct DiffObj{Obj}
     obj1::Obj
     obj2::Obj
@@ -56,7 +36,26 @@ struct Equal_Obj{A,M,KW<:NamedTuple}
     fcall::RefValue{Int}
 end
 
-Equal_Obj(m, kwargs::NamedTuple=NamedTuple()) = Zero_Margin(m, kwargs, Ref(0))
+Equal_Obj(m, kwargs::NamedTuple=NamedTuple()) = Equal_Obj(m, kwargs, Ref(0))
+
+struct Default_Zero_Margin{F, O}
+    equal_obj::F
+    obj2::O
+end
+
+_copyx(obj::Objective{<:Any, A}, x::A) where A<:SVector =
+    Objective(obj.f, x, obj.fcall)
+
+# Fallback method assumes A is a mutable array
+_copyx(obj::Objective{<:Any, A}, x::A) where A =
+    Objective(obj.f, copyto!(obj.x, x), obj.fcall)
+
+function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
+    # The order of true and false matters in case there is no interior solution
+    obj = _setx(obj, true, i)
+    obj2 = _setx(_copyx(zm.obj2, obj.x), false, i)
+    return zm.equal_obj(obj, obj2, lb, ub)
+end
 
 struct SqueezingPolicyTrace{Z}
 	i::Int
@@ -84,9 +83,8 @@ end
 # A special value for indicating no new cutoff
 const _nextunknown = (Inf, Inf, 0, undetermined)
 
-function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
-        zero_margin, equal_obj, zbounds::Tuple{Z,Z};
-		x0=nothing, trace::Bool=false, kwargs...) where Z
+function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z};
+		zero_margin=nothing, x0=nothing, trace::Bool=false, kwargs...) where Z
 	S = length(obj.x)
 	if x0 === nothing
 		if obj.x isa SVector
@@ -100,9 +98,13 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool,
 		x = x0
     end
     tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
+    obj2 = deepcopy(obj)
+    if zero_margin === nothing
+        zero_margin = Default_Zero_Margin(equal_obj, obj2)
+    end
 	return SqueezingPolicy(scdca, allu, [x[1]], Set([x[1]]), [1],
         Dict{Tuple{Int,typeof(obj.x)},Z}(),
-        zero_margin, equal_obj, deepcopy(obj), Ref(0), Ref(0), tr), x
+        zero_margin, equal_obj, obj2, Ref(0), Ref(0), tr), x
 end
 
 _squeeze(x::StateChoice, s::ItemState, i::Int) =
@@ -297,7 +299,7 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
             lastz = cutoffs[end]
             znew, obj = p.solver.equal_obj(obj, obj2, lastz, z)
             p.solver.equal_obj_call[] += 1
-            push!(cutoffs, lastz < znew < z ? znew : z)
+            push!(cutoffs, ifelse(lastz < znew < z, znew, z))
             push!(xs, xmax)
         end
         if znext > z
@@ -315,4 +317,34 @@ function solve!(p::CDCP{<:SqueezingPolicy}; restart::Bool=false)
 	p.state = squeeze!(p)
     p.state = combine_branch!(p)
 	return p
+end
+
+# Compatibility with old interface
+# Some keyword arguments may simply be dummies
+# ! Rewrite for the new interface is strongly recommended
+function policy!((cutoffs, policies), containers, C::Integer; restart::Bool=true, kwargs...)
+    containers isa CDCP{<:SqueezingPolicy} ||
+        throw(ArgumentError("containers of type $(typeof(containers)) is no longer supported; please switch to the new interface"))
+    p = containers
+    solve!(p; restart=restart)
+    resize!(cutoffs, length(p.x.cutoffs)+1)
+    copyto!(cutoffs, p.x.cutoffs)
+    cutoffs[end] = p.x.ub
+    resize!(policies, length(p.x.xs))
+    for i in eachindex(policies)
+        policies[i] = BitVector(setsub(p.x.xs[i]))
+    end
+    return cutoffs, policies
+end
+
+function policy(C::Integer;
+        scdca::Bool, obj, equalise_obj,
+        D_j_obj=nothing, zero_D_j_obj=nothing, show_time::Bool=false,
+        emptyset=falses(C), restart::Bool=true, kwargs...)
+    p = solve(SqueezingPolicy, obj, C, scdca, equalise_obj, (-Inf, Inf);
+        zero_margin=zero_D_j_obj, kwargs...)
+    cutoffs = copy(p.x.cutoffs)
+    push!(cutoffs, p.x.ub)
+    policies = [BitVector(setsub(x)) for x in p.x.xs]
+    return cutoffs, policies
 end
