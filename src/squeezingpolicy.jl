@@ -272,13 +272,10 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
     while true
         fx = -Inf
         # Search through overlapping intervals and determine the next z
-        for (k, x) in enumerate(pool)
+        for x in pool
             if x.lb > z
-                if znext == z # Not updated yet
-                    znext = x.lb
-                elseif x.lb > znext
-                    break
-                end 
+                znext = x.lb
+                break
             end
             if x.lb <= z < x.ub
                 obj.fcall < p.maxfcall || return maxfcall_reached

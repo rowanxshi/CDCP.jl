@@ -1,8 +1,10 @@
-struct BruteForce <: CDCPSolver
+struct BruteForce{Z} <: CDCPSolver
     ids::Vector{Int}
+    z::Z
 end
 
-_init(::Type{BruteForce}, obj, args...; kwargs...) = BruteForce([0]), copy(obj.x)
+_init(::Type{BruteForce}, obj, args...; z=nothing, kwargs...) =
+    BruteForce([0], z), copy(obj.x)
 
 _setchoice(obj::Objective{<:Any,Vector{Bool}}, ids::Vector{Int}) =
     (fill!(obj.x, false); fill!(view(obj.x, ids), true); obj)
@@ -33,26 +35,13 @@ end
     (s, s)
 end
 
-function _s(obj, C, ids, p)
-    next = iterate(C, ids)
-    while next !== nothing
-        _setchoice(obj, ids)
-        val, obj = value(obj, nothing)
-        if val > p.fx
-            p.fx = val
-            p.x .= obj.x
-        end
-        next = iterate(C, ids)
-    end
-end
-
-function solve!(p::CDCP{BruteForce}; restart::Bool=false)
-    obj, ids = p.obj, p.solver.ids
+function solve!(p::CDCP{<:BruteForce}; restart::Bool=false)
+    obj, ids, z = p.obj, p.solver.ids, p.solver.z
     restart && (resize!(ids, 1); ids[1] = 0)
     S = length(p.x)
     # The case where no item is chosen
     fill!(obj.x, false)
-    val, obj = value(obj, nothing)
+    val, obj = value(obj, z)
     if val > p.fx
         p.fx = val
         p.x .= obj.x
@@ -70,7 +59,7 @@ function solve!(p::CDCP{BruteForce}; restart::Bool=false)
         next = iterate(C, ids)
         while next !== nothing
             _setchoice(obj, ids)
-            val, obj = value(obj, nothing)
+            val, obj = value(obj, z)
             if val > p.fx
                 p.fx = val
                 p.x .= obj.x
