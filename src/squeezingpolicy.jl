@@ -67,9 +67,7 @@ end
 
 struct SqueezingPolicy{Z,A,AO,F1,F2,O,TR} <: CDCPSolver
 	scdca::Bool
-    allu::A
     pool::Vector{StateChoice{Z,A}}
-    seen::Set{StateChoice{Z,A}}
     branching::Vector{Int}
     lookup_zero_margin::Dict{Tuple{Int,AO},Z}
     zero_margin::F1
@@ -81,19 +79,16 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,TR} <: CDCPSolver
     nobranching::Bool
 end
 
-# A special value for indicating no new cutoff
-const _nextunknown = (Inf, Inf, 0, undetermined)
-
 function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z};
 		zero_margin=nothing, x0=nothing, trace::Bool=false,
         nobranching::Bool=false, kwargs...) where Z
 	S = length(obj.x)
-    allu = obj.x isa SVector ? _fillstate(SVector{S,ItemState}, undetermined) :
-        fill(undetermined, S)
 	if x0 === nothing
 		if obj.x isa SVector
+            allu = _fillstate(SVector{S,ItemState}, undetermined)
         	x = Policy([zbounds[1]], [allu], zbounds[2])
     	else
+            allu = fill(undetermined, S)
             x = Policy([zbounds[1]], [allu], zbounds[2])
 		end
 	else
@@ -105,7 +100,7 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
         zero_margin = Default_Zero_Margin(equal_obj, obj2)
     end
     pool = [x[i] for i in eachindex(x.xs)]
-	return SqueezingPolicy(scdca, allu, pool, Set(pool), collect(1:length(x.xs)),
+	return SqueezingPolicy(scdca, pool, collect(1:length(x.xs)),
         Dict{Tuple{Int,typeof(obj.x)},Z}(),
         zero_margin, equal_obj, obj2, Ref(0), Ref(0), tr, nobranching), x
 end
@@ -131,7 +126,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
     if z <= x.lb # Include the whole interval
         x = _squeeze(x, included, i)
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, included))
-        return x, _nextunknown, included
+        return (x,)
     elseif z >= x.ub # Cannot include any part of the interval
         tr === nothing ||
             push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, undetermined))
@@ -139,12 +134,10 @@ function squeeze!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
     else
         tr === nothing ||
             push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, undetermined))
-        ub0 = x.ub # ub may be replaced by squeeze_exclude!
-        x, next, state = squeeze_exclude!(p, x, i)
-        next = next[1] < z ? (next[1], z, next[3:4]...) : (z, ub0, i, included)
-        # next[1] can be smaller than x.ub if cannot exclude any part by squeeze_exclude!
-        x = StateChoice(x.lb, min(x.ub, next[1]), x.x)
-        return x, next, state
+        x1 = StateChoice(x.lb, z, x.x)
+        xs = squeeze_exclude!(p, x1, i)
+        x2 = StateChoice(z, x.ub, x.x)
+        return xs..., x2
     end
 end
 
@@ -163,16 +156,16 @@ function squeeze_exclude!(p::CDCP{<:SqueezingPolicy}, x::StateChoice, i::Int)
     if z >= x.ub # Exclude the whole interval
         x = _squeeze(x, excluded, i)
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, excluded))
-        return x, _nextunknown, excluded
+        return (x,)
     elseif z <= x.lb # Cannot exclude any part of the interval
         x = _setitemstate(x, aux, i) # Don't use _squeeze
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, aux))
-        return x, _nextunknown, aux
+        return (x,)
     else
         tr === nothing || push!(tr[end], SqueezingPolicyTrace(i, z, x.lb, x.ub, excluded))
-        ub0 = x.ub
-        x = StateChoice(x.lb, z, _squeeze(x.x, excluded, i))
-        return x, (z, ub0, i, aux), excluded
+        x1 = StateChoice(x.lb, z, _squeeze(x.x, excluded, i))
+        x2 = StateChoice(z, x.ub, _setitemstate(x.x, aux, i))
+        return x1, x2
     end
 end
 
@@ -195,50 +188,26 @@ function _squeezenext(::SVector{S}, s::ItemState, k::Int) where S
 end
 
 function squeeze!(p::CDCP{<:SqueezingPolicy})
-	S = length(p.x.xs[1])
-    pool, seen, branching = p.solver.pool, p.solver.seen, p.solver.branching
+    pool, branching = p.solver.pool, p.solver.branching
     while !isempty(branching)
         k = pop!(branching)
         x = pool[k]
-        ub0 = x.ub # Save the original one before it's replaced
-        next = _nextunknown
-        lastaux = nothing
         i = findfirst(==(undetermined), x.x)
-        while i !== nothing
-            p.obj.fcall < p.maxfcall || return maxfcall_reached
-	    	x, next1, itemstate = squeeze!(p, x, i)
-            next = ifelse(next1[1] < next[1], next1, next)
-	    	lastaux = ifelse(itemstate == aux, i, nothing)
-	    	if i < S
-	    		i = findnext(==(undetermined), x.x, i+1)
-	    		i === nothing && (i = findfirst(==(undetermined), x.x))
-	    	else
-	    		i = findfirst(==(undetermined), x.x)
-	    	end
-	    end
-
-        # Avoid accumulating duplicates
-        N = length(seen)
-        push!(seen, x)
-        length(seen) > N || continue
-
-        if lastaux === nothing || p.solver.nobranching
-            pool[k] = x
+        if i === nothing
+            j = findfirst(==(aux), x.x)
+            if !(j === nothing || p.solver.nobranching)
+                xin, xout = branch(x, j)
+                pool[k] = xin
+                push!(pool, xout)
+                push!(branching, k, length(pool))
+            end
         else
-            xin, xout = branch(x, lastaux)
-            pool[k] = xin
-            push!(pool, xout)
-            push!(branching, k, length(pool))
-        end
-        if next != _nextunknown
-            lb, ub, i, s = next
-            sc = StateChoice(lb, ub, p.solver.allu)#_squeezenext(x.x, s, i))
-            push!(pool, sc)
-            push!(branching, length(pool))
-            # Must make sure no interval is left out
-            if ub < ub0
-                sc = StateChoice(ub, ub0, p.solver.allu)
-                push!(pool, sc)
+            p.obj.fcall < p.maxfcall || return maxfcall_reached
+	    	xs = squeeze!(p, x, i)
+            pool[k] = xs[1]
+            push!(branching, k)
+            for j in 2:length(xs)
+                push!(pool, xs[j])
                 push!(branching, length(pool))
             end
         end
