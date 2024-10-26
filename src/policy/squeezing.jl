@@ -57,6 +57,7 @@ end
 function converge!(working, converged; cdcp...)
 	while !isempty(working)
 		int = pop!(working)
+		isequal(int.l, int.r) && continue
 		j = next_undetermined(int)
 		if iszero(j)
 			push!(converged, int)
