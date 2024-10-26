@@ -153,7 +153,12 @@ function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState})
 	end
     while i !== nothing && p.obj.fcall < p.maxfcall
 		x, fx, itemstate = squeeze!(p, x, i)
-		lastaux = ifelse(itemstate == aux, i, nothing)
+		if itemstate == aux
+			lastaux = lastaux === nothing ? i : min(lastaux, i)
+		else
+			lastaux = nothing
+		end
+		#lastaux = ifelse(itemstate == aux, i, nothing)
 		if i < S
 			i = findnext(==(undetermined), x, i+1)
 			i === nothing && (i = findfirst(==(undetermined), x))

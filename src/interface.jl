@@ -13,11 +13,11 @@ _setx(obj::Objective{<:Any,<:SVector}, v, i) =
 _setx(obj::Objective, v, i) =
     Objective(obj.f, setindex!(obj.x, v, i), obj.fcall)
 
-_addfcall(obj::Objective, n=1) = Objective(obj.f, obj.x, obj.fcall+n)
+addfcall(obj::Objective, n=1) = Objective(obj.f, obj.x, obj.fcall+n)
 _clearfcall(obj::Objective) = Objective(obj.f, obj.x, 0)
 
-value(obj::Objective, z) = obj.f(obj.x, z), _addfcall(obj)
-value(obj::Objective, ::Nothing) = obj.f(obj.x), _addfcall(obj)
+value(obj::Objective, z) = obj.f(obj.x, z), addfcall(obj)
+value(obj::Objective, ::Nothing) = obj.f(obj.x), addfcall(obj)
 
 function margin(obj::Objective, i::Int, z)
     obj = _setx(obj, true, i)

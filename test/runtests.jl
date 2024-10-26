@@ -2,9 +2,10 @@ using Test
 using CombinatorialDiscreteChoice
 
 using Random
+using Roots
 using StaticArrays
 
-using CombinatorialDiscreteChoice: _clearfcall
+using CombinatorialDiscreteChoice: Equal_Obj, _clearfcall
 
 const tests = [
     "interface",

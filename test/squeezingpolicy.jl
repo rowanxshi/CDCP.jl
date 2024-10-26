@@ -4,6 +4,7 @@ function zero_margin(obj::Objective{TestObj}, i, lb, ub)
     x1 = setindex(obj.x, true, i)
     x0 = setindex(obj.x, false, i)
     z = f[i] / (sum(i->x1[i]*val[i], 1:S)^δ - sum(i->x0[i]*val[i], 1:S)^δ)
+    obj = addfcall(obj, 2) # Needed for maxfcall to work
     return z, obj
 end
 
@@ -12,6 +13,7 @@ function equal_obj(obj1::Objective{TestObj}, obj2::Objective{TestObj}, lb, ub)
     f = range(0.1, length=S, step=0.1)
     z = sum(i->obj1.x[i]*val[i], 1:S)^δ - sum(i->obj2.x[i]*val[i], 1:S)^δ
     z = sum(i->(obj1.x[i]-obj2.x[i])*f[i], 1:S) / z
+    obj1 = addfcall(obj1, 2) # Needed for maxfcall to work
     return z, obj1
 end
 
@@ -34,6 +36,11 @@ end
     p1 = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf))
     @time solve!(p1);
     @test p1.x == p.x
+
+    p2 = init(SqueezingPolicy, obj, 10, false, Equal_Obj(Roots.Order1()), (-Inf, Inf))
+    @time solve!(p2);
+    @test p2.x.xs == p.x.xs
+    @test p2.x.cutoffs ≈ p.x.cutoffs atol=1e-8
 
     f = TestObj(0.25, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))

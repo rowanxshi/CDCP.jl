@@ -13,6 +13,7 @@ import CommonSolve: init, solve!, solve
 export init, solve!, solve
 
 export Objective,
+       addfcall,
        value,
        margin,
        CDCP,

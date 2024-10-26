@@ -30,7 +30,7 @@ function (d::DiffObj)(z, fcall)
     return f2 - f1
 end
 
-struct Equal_Obj{A,M,KW<:NamedTuple}
+struct Equal_Obj{M,KW<:NamedTuple}
     m::M
     kwargs::KW
     fcall::RefValue{Int}
@@ -78,20 +78,22 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,TR} <: CDCPSolver
     zero_margin_call::RefValue{Int}
     equal_obj_call::RefValue{Int}
     trace::TR
+    nobranching::Bool
 end
 
 # A special value for indicating no new cutoff
 const _nextunknown = (Inf, Inf, 0, undetermined)
 
 function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z};
-		zero_margin=nothing, x0=nothing, trace::Bool=false, kwargs...) where Z
+		zero_margin=nothing, x0=nothing, trace::Bool=false,
+        nobranching::Bool=false, kwargs...) where Z
 	S = length(obj.x)
+    allu = obj.x isa SVector ? _fillstate(SVector{S,ItemState}, undetermined) :
+        fill(undetermined, S)
 	if x0 === nothing
 		if obj.x isa SVector
-            allu = _fillstate(SVector{S,ItemState}, undetermined)
         	x = Policy([zbounds[1]], [allu], zbounds[2])
     	else
-            allu = fill(undetermined, S)
             x = Policy([zbounds[1]], [allu], zbounds[2])
 		end
 	else
@@ -102,9 +104,10 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
     if zero_margin === nothing
         zero_margin = Default_Zero_Margin(equal_obj, obj2)
     end
-	return SqueezingPolicy(scdca, allu, [x[1]], Set([x[1]]), [1],
+    pool = [x[i] for i in eachindex(x.xs)]
+	return SqueezingPolicy(scdca, allu, pool, Set(pool), collect(1:length(x.xs)),
         Dict{Tuple{Int,typeof(obj.x)},Z}(),
-        zero_margin, equal_obj, obj2, Ref(0), Ref(0), tr), x
+        zero_margin, equal_obj, obj2, Ref(0), Ref(0), tr, nobranching), x
 end
 
 _squeeze(x::StateChoice, s::ItemState, i::Int) =
@@ -219,7 +222,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy})
         push!(seen, x)
         length(seen) > N || continue
 
-        if lastaux === nothing
+        if lastaux === nothing || p.solver.nobranching
             pool[k] = x
         else
             xin, xout = branch(x, lastaux)
@@ -229,7 +232,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy})
         end
         if next != _nextunknown
             lb, ub, i, s = next
-            sc = StateChoice(lb, ub, _squeezenext(x.x, s, i))
+            sc = StateChoice(lb, ub, p.solver.allu)#_squeezenext(x.x, s, i))
             push!(pool, sc)
             push!(branching, length(pool))
             # Must make sure no interval is left out
@@ -276,8 +279,7 @@ function combine_branch!(p::CDCP{<:SqueezingPolicy})
             if x.lb > z
                 znext = x.lb
                 break
-            end
-            if x.lb <= z < x.ub
+            elseif z < x.ub
                 obj.fcall < p.maxfcall || return maxfcall_reached
                 obj = _setchoice(obj, setsub(x.x))
                 fx1, obj = value(obj, z)
@@ -312,7 +314,11 @@ end
 function solve!(p::CDCP{<:SqueezingPolicy}; restart::Bool=false)
 	# restart && (p = _reinit!(p))
 	p.state = squeeze!(p)
-    p.state = combine_branch!(p)
+    if p.state == maxfcall_reached
+        @warn "maxfcall is reached before convergence"
+        return p
+    end
+    p.solver.nobranching || (p.state = combine_branch!(p))
 	return p
 end
 
