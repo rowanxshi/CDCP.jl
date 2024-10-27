@@ -1,6 +1,11 @@
 function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	# for excluding: look at best case
-	exclude = (scdca && D_j_obj(j, sub) ≤ 0) || (!scdca && D_j_obj(j, sup) < 0)
+	exclude = if scdca
+		Djbest = D_j_obj(j, sub)
+		signbit(Djbest) || iszero(Djbest)
+	else
+		signbit(D_j_obj(j, sup))
+	end
 	if exclude
 		sup = setindex!(sup, false, j)
 		aux = fill!(aux, false)
@@ -8,7 +13,12 @@ function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	end
 
 	# for including: look at worst case
-	include = (scdca && D_j_obj(j, sup) > 0) || (!scdca && D_j_obj(j, sub) ≥ 0)
+	include = if scdca
+		Djworst = D_j_obj(j, sup)
+		!signbit(Djworst) && !iszero(Djwosrt)
+	else
+		!signbit(D_j_obj(j, sub))
+	end
 	if include
 		sub = setindex!(sub, true, j)
 		aux = fill!(aux, false)

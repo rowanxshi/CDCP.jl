@@ -29,7 +29,7 @@ function brute!(policy, working, converged, done; cdcp...)
 			active_strats = trues(length(converged))
 			
 			# subinterval is an interval struct, but the BitVectors track which strategies (in converged) are still in consideration
-			push!(working, interval(active_strats, cutoffs[k], cutoffs[k+1]))
+			push!(working, Interval(active_strats, cutoffs[k], cutoffs[k+1]))
 			converge_brute!(policy, working, converged; cdcp...)
 		end
 	end
@@ -41,7 +41,7 @@ converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
 	subint = last(working)
 	if sum(subint.sub) == 1
 		i_option = findfirst(subint.sub)
-		patch!(policy, interval(converged[i_option].sub, subint.l, subint.r))
+		patch!(policy, Interval(converged[i_option].sub, subint.l, subint.r))
 		pop!(working)
 		continue
 	end
@@ -64,9 +64,9 @@ converge_brute!(policy, working, converged; cdcp...) = while !isempty(working)
 	end
 end
 
-function brute_branch!(subint::interval, converged, z_equal, i_pair...; cdcp...)
-	subint_left = interval(subint.sub, subint.l, z_equal)
-	subint_right = interval(copy(subint.sub), z_equal, subint.r)
+function brute_branch!(subint::Interval, converged, z_equal, i_pair...; cdcp...)
+	subint_left = Interval(subint.sub, subint.l, z_equal)
+	subint_right = Interval(copy(subint.sub), z_equal, subint.r)
 
 	simple_filter!(subint_left, converged, subint.l, i_pair...; cdcp...)
 	simple_filter!(subint_right, converged, subint.r, i_pair...; cdcp...)
@@ -74,14 +74,14 @@ function brute_branch!(subint::interval, converged, z_equal, i_pair...; cdcp...)
 	(subint_left, subint_right)
 end
 
-function simple_filter!(subint::interval, converged, z, i_pair...; cdcp...)
+function simple_filter!(subint::Interval, converged, z, i_pair...; cdcp...)
 	diff = cdcp[:obj](converged[first(i_pair)].sub, z) - cdcp[:obj](converged[last(i_pair)].sub, z)
 	J1_worse = signbit(diff)
 	subint.sub[J1_worse ? first(i_pair) : last(i_pair)] = false
 	return true
 end
 
-@inbounds function simple_filter!(subint::interval, converged; cdcp...)
+@inbounds function simple_filter!(subint::Interval, converged; cdcp...)
 	options = sum(subint.sub)
 	
 	max_left = maximum(enumerate(converged)) do (i, option)
@@ -114,7 +114,7 @@ function paste_adjacent!((cutoffs, policies))
 	cutoffs, policies
 end
 
-function patch!((cutoffs, policies), int::interval)
+function patch!((cutoffs, policies), int::Interval)
 	l_in = insorted(int.l, cutoffs)
 	r_in = insorted(int.r, cutoffs)
 	

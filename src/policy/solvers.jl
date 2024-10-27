@@ -8,7 +8,7 @@ The solver can optionally take `D_j_obj(j, J, z)` and `zero_D_j_obj(j, J, l, r)`
 See also: [`solve!`](@ref), [`solve`](@ref)
 """
 function policy(C::Integer; e...)
-	working = Vector{interval{Float64, Float64}}(undef, 0)
+	working = Vector{Interval{BitVector, Float64}}(undef, 0)
 	converged = similar(working)
 	done = similar(working)
 	
@@ -42,6 +42,6 @@ function policy!((cutoffs, policies), (working, converged, done), C::Integer; sc
 end
 function restart!((working, converged, done), C)
 	empty!.((working, converged, done))
-	int = interval(_containers(C), -Inf, Inf)
+	int = Interval(_containers(C), -Inf, Inf)
 	push!(working, int)
 end
