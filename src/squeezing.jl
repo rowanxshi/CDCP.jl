@@ -147,9 +147,12 @@ function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState})
 	fx = -Inf
 	lastaux = nothing
 	i = findfirst(==(undetermined), x)
-	if i === nothing # All values set by branching
-		fx, obj = value(p.obj, p.solver.z)
-		p.obj = obj
+	if i === nothing
+		lastaux = findfirst(==(aux), x) # May find aux from initial value
+		if lastaux === nothing # Last value set by branching
+			fx, obj = value(p.obj, p.solver.z)
+			p.obj = obj
+		end
 	end
     while i !== nothing && p.obj.fcall < p.maxfcall
 		x, fx, itemstate = squeeze!(p, x, i)

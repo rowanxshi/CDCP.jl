@@ -42,6 +42,12 @@ end
     @test p2.x.xs == p.x.xs
     @test p2.x.cutoffs ≈ p.x.cutoffs atol=1e-8
 
+    p3 = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin, ntasks=2)
+    @time solve!(p3);
+    @test p3.x.xs == p.x.xs
+    @test p3.x.cutoffs ≈ p.x.cutoffs atol=1e-8
+
     f = TestObj(0.25, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
     p = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
@@ -62,6 +68,12 @@ end
     @test findall(p.x.xs[10] .== included) == [1:6...,8,9]
     @test findall(p.x.xs[11] .== included) == [1:6...,8:10...]
 
+    p1 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin, ntasks=2)
+    @time solve!(p1);
+    @test p1.x.xs == p.x.xs
+    @test p1.x.cutoffs ≈ p.x.cutoffs atol=1e-8
+
     f = TestObj(0.75, 10, v)
     obj = Objective(f, SVector{10,Bool}(trues(10)))
     p1 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
@@ -73,45 +85,52 @@ end
         3.282285962843947, 3.401442745510605, 4.460867313570078, 233.2431869924403]
     @test p1.x.xs == p.x.xs
 
-    v1 = rand(10)
-    f = TestObj(1.2, 10, v1)
-    obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf),
+    p2 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin, ntasks=2)
+    @time solve!(p2);
+    @test p2.x.xs == p1.x.xs
+    @test p2.x.cutoffs ≈ p1.x.cutoffs atol=1e-8
+
+    N = 20
+    v1 = rand(N)
+    f = TestObj(1.2, N, v1)
+    obj = Objective(f, SVector{N,Bool}(trues(N)))
+    p = init(SqueezingPolicy, obj, N, false, equal_obj, (-Inf, Inf),
         zero_margin=zero_margin)
     @time solve!(p);
 
     # Check results from the single-type problem at points near cutoffs
     for k in 2:length(p.x.cutoffs)
-        p1 = init(Squeezing, obj, 10, false,
+        p1 = init(Squeezing, obj, N, false,
             z=0.99*p.x.cutoffs[k]+0.01*max(-0.1,p.x.cutoffs[k-1]))
         solve!(p1)
         @test p1.x == p.x.xs[k-1]
         if k < length(p.x.cutoffs)
-            p1 = init(Squeezing, obj, 10, false,
+            p1 = init(Squeezing, obj, N, false,
                 z=0.99*p.x.cutoffs[k]+0.01*p.x.cutoffs[k+1])
         else
-            p1 = init(Squeezing, obj, 10, false, z=p.x.cutoffs[k]+1)
+            p1 = init(Squeezing, obj, N, false, z=p.x.cutoffs[k]+1)
         end
         solve!(p1)
         @test p1.x == p.x.xs[k]
     end
 
-    f = TestObj(0.5, 10, v1)
-    obj = Objective(f, SVector{10,Bool}(trues(10)))
-    p = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
+    f = TestObj(0.5, N, v1)
+    obj = Objective(f, SVector{N,Bool}(trues(N)))
+    p = init(SqueezingPolicy, obj, N, true, equal_obj, (-Inf, Inf),
         zero_margin=zero_margin)
     @time solve!(p);
 
     for k in 2:length(p.x.cutoffs)
-        p1 = init(Squeezing, obj, 10, true,
+        p1 = init(Squeezing, obj, N, true,
             z=0.99*p.x.cutoffs[k]+0.01*max(-0.1,p.x.cutoffs[k-1]))
         solve!(p1)
         @test p1.x == p.x.xs[k-1]
         if k < length(p.x.cutoffs)
-            p1 = init(Squeezing, obj, 10, true,
+            p1 = init(Squeezing, obj, N, true,
                 z=0.99*p.x.cutoffs[k]+0.01*p.x.cutoffs[k+1])
         else
-            p1 = init(Squeezing, obj, 10, true, z=p.x.cutoffs[k]+1)
+            p1 = init(Squeezing, obj, N, true, z=p.x.cutoffs[k]+1)
         end
         solve!(p1)
         @test p1.x == p.x.xs[k]
