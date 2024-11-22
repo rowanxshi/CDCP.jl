@@ -42,7 +42,7 @@ end
     aux
 end
 
-mutable struct CDCP{M<:CDCPSolver, O<:Objective, A, TF<:AbstractFloat}
+mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, A, TF<:AbstractFloat}
     solver::M
 	obj::O
     x::A
@@ -67,7 +67,7 @@ function init(::Type{M}, obj, S::Integer, args...;
             SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
     end
     solver, x = _init(M, obj, args...; valtype=valtype, kwargs...)
-    return CDCP{typeof(solver), typeof(obj), typeof(x), valtype}(
+    return CDCProblem{typeof(solver), typeof(obj), typeof(x), valtype}(
 		solver, obj, x, convert(valtype,-Inf), maxfcall, inprogress)
 end
 

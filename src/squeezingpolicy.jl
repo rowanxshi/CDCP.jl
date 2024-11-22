@@ -117,7 +117,7 @@ _squeeze(x::IntervalChoice, s::ItemState, i::Int) =
 _setitemstate(x::IntervalChoice, s::ItemState, i::Int) =
     IntervalChoice(x.lb, x.ub, _setitemstate(x.x, s, i))
 
-function squeeze!(p::CDCP{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
+function squeeze!(p::CDCProblem{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
 	obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
     lookup = p.solver.lookup_zero_margin
     obj = _setchoice(obj, scdca ? setsup(x.x) : setsub(x.x))
@@ -147,7 +147,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
     end
 end
 
-function squeeze_exclude!(p::CDCP{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
+function squeeze_exclude!(p::CDCProblem{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
     obj, scdca, tr = p.obj, p.solver.scdca, p.solver.trace
     lookup = p.solver.lookup_zero_margin
     obj = _setchoice(obj, scdca ? setsub(x.x) : setsup(x.x))
@@ -175,7 +175,7 @@ function squeeze_exclude!(p::CDCP{<:SqueezingPolicy}, x::IntervalChoice, i::Int)
     end
 end
 
-function squeeze!(p::CDCP{<:SqueezingPolicy})
+function squeeze!(p::CDCProblem{<:SqueezingPolicy})
     pool, squeezing, branching = p.solver.pool, p.solver.squeezing, p.solver.branching
     while !isempty(squeezing)
         k = pop!(squeezing)
@@ -197,7 +197,7 @@ function squeeze!(p::CDCP{<:SqueezingPolicy})
     return inprogress
 end
 
-function _reset!(p::CDCP{<:Squeezing}, z, x)
+function _reset!(p::CDCProblem{<:Squeezing}, z, x)
     p.state = inprogress
     p.solver = Squeezing(p.solver.scdca, empty!(p.solver.branching), z, p.solver.trace)
     p.x = x
@@ -218,7 +218,7 @@ function setx0scdcb(x0::SVector{S,ItemState}, xl::SVector{S,ItemState}) where S
 	end
 end
 
-function search!(p::CDCP{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, equal_obj)
+function search!(p::CDCProblem{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, equal_obj)
     zl, xl, zr, xr = zl0, xl0, zr0, xr0
     while true
         # xl and xr should always be different here
@@ -258,14 +258,14 @@ function search!(p::CDCP{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, eq
     end
 end
 
-function _solvesingle!(p::CDCP{<:Squeezing}, z, x0)
+function _solvesingle!(p::CDCProblem{<:Squeezing}, z, x0)
     _reset!(p, z, x0)
     solve!(p)
     p.state == success || error("single-agenet solver fails with z = ", p.solver.z)
     return p.x
 end
 
-function branching!(p::CDCP{<:SqueezingPolicy}, k::Int, itask::Int)
+function branching!(p::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
     pool, matched = p.solver.pool, p.solver.matcheds[itask]
     x = pool[k]
     sp = p.solver.singlesolvers[itask]
@@ -280,7 +280,7 @@ function branching!(p::CDCP{<:SqueezingPolicy}, k::Int, itask::Int)
     end
 end
 
-function branching!(p::CDCP{<:SqueezingPolicy})
+function branching!(p::CDCProblem{<:SqueezingPolicy})
     pool, branching, matcheds = p.solver.pool, p.solver.branching, p.solver.matcheds
     ntasks = length(matcheds)
     for m in matcheds
@@ -303,7 +303,7 @@ end
 
 _lb(x::IntervalChoice) = x.lb
 
-function concat!(p::CDCP{<:SqueezingPolicy})
+function concat!(p::CDCProblem{<:SqueezingPolicy})
     pool = p.solver.pool
     sort!(pool, by=_lb)
     cutoffs = resize!(p.x.cutoffs, 1)
@@ -321,7 +321,7 @@ function concat!(p::CDCP{<:SqueezingPolicy})
     return success
 end
 
-function solve!(p::CDCP{<:SqueezingPolicy}; restart::Bool=false)
+function solve!(p::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
 	# restart && (p = _reinit!(p))
 	p.state = squeeze!(p)
     if p.state == maxfcall_reached
@@ -333,32 +333,3 @@ function solve!(p::CDCP{<:SqueezingPolicy}; restart::Bool=false)
 	return p
 end
 
-# Compatibility with old interface
-# Some keyword arguments may simply be dummies
-# ! Rewrite for the new interface is strongly recommended
-function policy!((cutoffs, policies), containers, C::Integer; restart::Bool=true, kwargs...)
-    containers isa CDCP{<:SqueezingPolicy} ||
-        throw(ArgumentError("containers of type $(typeof(containers)) is no longer supported; please switch to the new interface"))
-    p = containers
-    solve!(p; restart=restart)
-    resize!(cutoffs, length(p.x.cutoffs)+1)
-    copyto!(cutoffs, p.x.cutoffs)
-    cutoffs[end] = p.x.ub
-    resize!(policies, length(p.x.xs))
-    for i in eachindex(policies)
-        policies[i] = BitVector(setsub(p.x.xs[i]))
-    end
-    return cutoffs, policies
-end
-
-function policy(C::Integer;
-        scdca::Bool, obj, equalise_obj,
-        D_j_obj=nothing, zero_D_j_obj=nothing, show_time::Bool=false,
-        emptyset=falses(C), restart::Bool=true, kwargs...)
-    p = solve(SqueezingPolicy, obj, C, scdca, equalise_obj, (-Inf, Inf);
-        zero_margin=zero_D_j_obj, kwargs...)
-    cutoffs = copy(p.x.cutoffs)
-    push!(cutoffs, p.x.ub)
-    policies = [BitVector(setsub(x)) for x in p.x.xs]
-    return cutoffs, policies
-end

@@ -16,7 +16,7 @@ export Objective,
        addfcall,
        value,
        margin,
-       CDCP,
+       CDCProblem,
        SolverState,
        ItemState,
        undetermined,
@@ -37,5 +37,6 @@ include("interface.jl")
 include("brute.jl")
 include("squeezing.jl")
 include("squeezingpolicy.jl")
+include("wrapper.jl")
 
 end

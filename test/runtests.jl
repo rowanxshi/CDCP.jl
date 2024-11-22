@@ -7,10 +7,13 @@ using StaticArrays
 
 using CombinatorialDiscreteChoice: Equal_Obj, _clearfcall
 
+const CDCP = CombinatorialDiscreteChoice
+
 const tests = [
     "interface",
     "squeezing",
-    "squeezingpolicy"
+    "squeezingpolicy",
+    "wrapper"
 ]
 
 printstyled("Running tests:\n", color=:blue, bold=true)

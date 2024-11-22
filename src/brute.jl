@@ -6,7 +6,7 @@ end
 _init(::Type{BruteForce}, obj, args...; z=nothing, kwargs...) =
     BruteForce([0], z), copy(obj.x)
 
-_setchoice(obj::Objective{<:Any,Vector{Bool}}, ids::Vector{Int}) =
+_setchoice(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int}) =
     (fill!(obj.x, false); fill!(view(obj.x, ids), true); obj)
 
 # Borrowed from Combinatorics.jl just for generating the entire choice space
@@ -35,7 +35,7 @@ end
     (s, s)
 end
 
-function solve!(p::CDCP{<:BruteForce}; restart::Bool=false)
+function solve!(p::CDCProblem{<:BruteForce}; restart::Bool=true)
     obj, ids, z = p.obj, p.solver.ids, p.solver.z
     restart && (resize!(ids, 1); ids[1] = 0)
     S = length(p.x)

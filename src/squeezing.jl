@@ -91,7 +91,7 @@ end
 
 _setitemstate(x::SVector{S,ItemState}, s::ItemState, i::Int) where S = setindex(x, s, i)
 
-function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
+function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
 	obj, scdca, z, tr = p.obj, p.solver.scdca, p.solver.z, p.solver.trace
     # For excluding: look at the best case
 	if scdca
@@ -142,7 +142,7 @@ function branch(x::AbstractVector{ItemState}, k::Int)
 	return xin, xex
 end
 
-function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState})
+function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 	S = length(x)
 	fx = -Inf
 	lastaux = nothing
@@ -180,7 +180,7 @@ function squeeze!(p::CDCP{<:Squeezing}, x::AbstractVector{ItemState})
 	return x, fx, state
 end
 
-function squeeze_branch!(p::CDCP{<:Squeezing})
+function squeeze_branch!(p::CDCProblem{<:Squeezing})
 	branching, tr = p.solver.branching, p.solver.trace
 	while !isempty(branching)
 		x = pop!(branching)
@@ -196,7 +196,7 @@ function squeeze_branch!(p::CDCP{<:Squeezing})
 	return success
 end
 
-function _reinit!(p::CDCP{<:Squeezing})
+function _reinit!(p::CDCProblem{<:Squeezing})
 	p.obj = _clearfcall(p.obj)
 	empty!(p.solver.branching)
 	if p.solver.trace !== nothing
@@ -213,7 +213,7 @@ function _reinit!(p::CDCP{<:Squeezing})
 	return p
 end
 
-function solve!(p::CDCP{<:Squeezing}; restart::Bool=false)
+function solve!(p::CDCProblem{<:Squeezing}; restart::Bool=false)
 	restart && (p = _reinit!(p))
 	p.x, p.fx, p.state = squeeze!(p, p.x)
 	p.state == success || p.state == maxfcall_reached && return p
