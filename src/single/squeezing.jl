@@ -15,7 +15,7 @@ function update!((sub, sup, aux), j::Integer; D_j_obj, scdca::Bool)
 	# for including: look at worst case
 	include = if scdca
 		Djworst = D_j_obj(j, sup)
-		!signbit(Djworst) && !iszero(Djwosrt)
+		!signbit(Djworst) && !iszero(Djworst)
 	else
 		!signbit(D_j_obj(j, sub))
 	end
