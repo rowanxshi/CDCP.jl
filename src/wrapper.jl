@@ -5,6 +5,12 @@ function _containers(C::Integer)
 	return (sub, sup, aux)
 end
 
+function _containers(Vs)
+	working = [Vs; ]
+	converged = similar(working)
+	(working, converged)
+end
+
 struct Interval{T <: AbstractVector{Bool}, N <: Real}
 	sub::T
 	sup::T
@@ -136,12 +142,14 @@ function solve!((sub, sup, aux); scdca::Bool, obj,
     solve!(p)
     # Translate result
     _invert_state!(sub, sup, aux, p.x)
+    return sup
 end
 
 function solve(C::Integer; obj, kwargs...)
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
     p = solve(Squeezing, wobj, scdca; z=z, restart=restart)
     _invert_state!(sub, sup, aux, p.x)
+    return sup
 end
 
 # D_j_obj is not used and hence ignored
@@ -178,10 +186,10 @@ function policy!(cutoffspolicies, containers, C::Integer;
             _initialized = true
         end
     end
+    policies = Union{Nothing, BitVector}[]
+	cutoffs = Float64[-Inf, Inf]
     if cutoffspolicies !== nothing
-        if _initialized
-            @warn "Both working and policies are non-empty; contents in policies are ignored"
-        else
+        if !_initialized
             cutoffs, policies = cutoffspolicies
             resize!(pool, length(policies))
             resize!(squeezing, length(policies))
@@ -189,10 +197,7 @@ function policy!(cutoffspolicies, containers, C::Integer;
                 pool[i] = IntervalChoice(cutoffs[i], cutoffs[i+1], policies[i])
                 squeezing[i] = i
             end
-        end
-    else
-        policies = Union{Nothing, BitVector}[]
-	    cutoffs = Float64[-Inf, Inf]
+        end  
     end
 
     solve!(p)
