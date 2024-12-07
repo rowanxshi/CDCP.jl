@@ -107,6 +107,12 @@ are the same objective function attached with different input vectors
 - `ntasks=1`: Number of threads used in the branching process.
 - `nobranching::Bool=false`: Skip the branching stage; only for inspecting the solver.
 - `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple`; a single-agent solver is used in the branching stage.
+
+!!! info
+
+    In case a cutoff point is not found,
+    `equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
+    This requirement is a breaking change from earlier implementation.
 """
 struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 	scdca::Bool
