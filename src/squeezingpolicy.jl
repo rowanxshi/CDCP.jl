@@ -65,6 +65,49 @@ struct SqueezingPolicyTrace{Z}
 	s::ItemState
 end
 
+"""
+    SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
+
+A type for solving a [`CDCProblem`](@ref) with a policy method
+as in Arkolakis, Eckert and Shi (2023).
+
+# Usage
+	solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
+	solve!(p::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
+
+Pass the type `SqueezingPolicy` as the first argument to `solve`
+indicates the use of the policy method for the problem.
+Users are required to specify the objective function `obj`
+that returns the value evaluated at a choice vector `x`
+with a parameter `z` that is a number.
+`obj` must have a method of `obj(x, z)`
+with `x` being a Boolean choice vector.
+`obj` must not restrict the specific type of `x`
+but only assume `x` is a vector with element type being `Bool`.
+Specifically, `obj` must *not* try to modify the elements in `x` when it is called.
+It should only read from `x` with `getindex`.
+The problem should satisfy SCD-C from above if `scdca` is `true`
+and SCD-C from below if `scdca` is `false`.
+`zbounds` determines the range of the parameter `z`,
+which could be `(-Inf, Inf)` if `z` can be any real number.
+
+`equal_obj` is a user-specified function that returns the cutoff point `z0`
+such that for a given pair of input choices `x1` and `x2`,
+`obj(x1, z0)` equals to `obj(x2, z0)` with `zl <= z0 <= zr`.
+It can be defined with one of the two alternative methods:
+- `equal_obj((x1, x2), zl, zr))` where the pair of input choices is
+accepted as a tuple.
+- `equal_obj(obj1::Objective, obj2::Objective, zl, zr)` where `obj1` and `obj2`
+are the same objective function attached with different input vectors
+`obj1.x` and `obj2.x` that correspond to `x1` and `x2` respectively.
+
+## Keywords
+- `zero_margin=nothing`: An optionally specified function that returns `z0` such that the `i`th margin of the objective function is zero at `x`. The function has a method `zero_margin(obj::Objective, i::Int, lb, ub)` with `x` attached to `obj`.
+- `x0=nothing`: Partially specified policy as initial starting point.
+- `ntasks=1`: Number of threads used in the branching process.
+- `nobranching::Bool=false`: Skip the branching stage; only for inspecting the solver.
+- `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple`; a single-agent solver is used in the branching stage.
+"""
 struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 	scdca::Bool
     pool::Vector{IntervalChoice{Z,A}}
@@ -82,7 +125,8 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
     nobranching::Bool
 end
 
-function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z};
+function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj,
+        zbounds::Tuple{Z,Z}=(-Inf, Inf);
 		zero_margin=nothing, x0=nothing, ntasks=1, trace::Bool=false,
         nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
 	S = length(obj.x)
@@ -99,8 +143,16 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
     end
     tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
     obj2 = deepcopy(obj)
+    # Harmonize user defined functions
+    if !applicable(equal_obj, obj, obj2, zbounds...)
+        # Assume equal_obj follows the old requirement for equalise_obj
+        equal_obj = Wrapped_Equalise_Obj(equal_obj)
+    end
     if zero_margin === nothing
         zero_margin = Default_Zero_Margin(equal_obj, obj2)
+    elseif !applicable(zero_margin, obj, 1, zbounds...)
+        @warn "Consider adapting `zero_margin` to the new method"
+        zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
     end
     pool = [x[i] for i in eachindex(x.xs)]
     A = eltype(x.xs)
@@ -205,6 +257,7 @@ function _reset!(p::CDCProblem{<:Squeezing}, z, x)
     return p
 end
 
+# With SCD-C from below, choice for an item only switches once
 function setx0scdcb(x0::SVector{S,ItemState}, xl::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())

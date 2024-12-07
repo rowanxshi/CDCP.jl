@@ -75,45 +75,12 @@ function _invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool},
     end
 end
 
-function D_j(obj)
-	D_j_obj(j::Integer, J::AbstractArray{Bool}, z::Real = 1) = let obj = obj
-		bool_j = J[j]
-		J = setindex!(J, true, j)
-		marg = obj(J, z)
-		J = setindex!(J, false, j)
-		marg -= obj(J, z)
-		J = setindex!(J, bool_j, j)
-		return marg
-	end
-end
-
 function zero_D_j(equalise_obj, holder::AbstractVector{Bool})
 	zero_D_j_obj(j::Integer, J::AbstractVector{Bool}, extras...) = let equalise_obj = equalise_obj, holder = holder
 		J2 = copyto!(holder, J)
 		J2 = setindex!(J2, !J[j], j)
 		equalise_obj((J, J2), extras...)
 	end
-end
-
-struct Wrapped_Equalise_Obj{F}
-    f::F
-end
-
-function (w::Wrapped_Equalise_Obj)(obj1, obj2, l, r)
-    obj1 = addfcall(obj1, 2)
-    return w.f((obj1.x, obj2.x), l, r), obj1
-end
-
-struct Wrapped_Zero_D_j_Obj{F}
-    f::F
-    J::Vector{Bool}
-end
-
-function (w::Wrapped_Zero_D_j_Obj)(obj, i, lb, ub)
-    copyto!(w.J, obj.x)
-    z = w.f(i, w.J, lb, ub)
-    obj = addfcall(obj, 1)
-    return z, obj
 end
 
 function restart!((working, converged, done), C)
@@ -123,17 +90,31 @@ function restart!((working, converged, done), C)
 end
 
 function naive!(J::AbstractVector{Bool}; obj, z=nothing)
+    Base.depwarn("Consider the new interface for solving the brute-force problem with `BruteForce`", :naive!)
     C = length(J)
     wobj = Objective(obj, copy(J))
     p = solve(BruteForce, wobj, C; z=z)
     copyto!(J, p.x)
 end
 
+"""
+	naive(C::Integer; obj)
+
+Solve a combinatorial discrete choice problem over `C` choices with simple brute force. (Generally used for testing or time-trial exercises.) The solver an objective function `π(J)`.
+
+See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility.
+    Future use should prefer the interface based on `solve(BruteForce, ...)`.
+"""
 naive(C::Integer; obj, z=nothing) = naive!(falses(C); obj, z)
 
-# Wrappers for singleagent method
-function solve!((sub, sup, aux); scdca::Bool, obj,
+function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing,
         containers = nothing, restart::Bool = true, z=nothing, kwargs...)
+    Base.depwarn("Consider the new interface for solving the single-agent problem with `Squeezing`", :solve!)
+    D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
     C = length(sub)
     wobj = Objective(obj, SVector{C,Bool}(trues(C)))
     p = init(Squeezing, wobj, C, scdca; z=z, restart=restart)
@@ -145,19 +126,33 @@ function solve!((sub, sup, aux); scdca::Bool, obj,
     return sup
 end
 
+"""
+	solve(C::Integer; scdca::Bool, obj, [; containers])
+
+Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the objective function `obj(J)` which must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
+
+See also: [`solve!`](@ref), [`policy`](@ref)
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility.
+    Future use should prefer the interface based on `solve(Squeezing, ...)`.
+"""
 function solve(C::Integer; obj, kwargs...)
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
-    p = solve(Squeezing, wobj, scdca; z=z, restart=restart)
-    _invert_state!(sub, sup, aux, p.x)
-    return sup
+    return solve(Squeezing, wobj, scdca; z=z, restart=restart)
 end
 
 # D_j_obj is not used and hence ignored
 function policy!(cutoffspolicies, containers, C::Integer;
-        scdca::Bool, obj, equalise_obj, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)),
+        scdca::Bool, obj, equalise_obj, D_j_obj=nothing,
+        zero_D_j_obj = zero_D_j(equalise_obj, falses(C)),
         show_time::Bool = false, emptyset = falses(C), restart::Bool = true,
         ntasks=1, trace::Bool=false,
         nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
+    Base.depwarn("Consider the new interface for solving the policy problem with `SqueezingPolicy`", :policy!)
+
+    D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
 
     restart && restart!(containers, C)
 
@@ -213,6 +208,20 @@ function policy!(cutoffspolicies, containers, C::Integer;
     return cutoffs, policies
 end
 
+"""
+	policy(C::Integer; scdca::Bool, obj, equalise_obj, [zero_D_j_obj])
+
+Find the policy function for a combinatorial discrete choice problem over `C` choices and one dimension of heterogeneity with SCD-C from above if `scdca` is `true` (otherwise, from below) and SCD-T. The solver uses the objective function `obj(J, z)`, which must accept as argument a Boolean vector with length `C` and the heterogeneous component `z` and the `equalise_obj((J1, J2), l, r)` function, which identifies the `z` where the agent is indifferent between the pair `(J1, J2)`. The routine provides the interval `[l, r]` along which this search is performed; if the marginal type is not in the interval, it is sufficient to return `nothing`.
+
+The solver can optionally take `zero_D_j_obj(j, J, l, r)`, a user-supplied function that identifies the `z` where the marginal value of item `j` to set `J` is zero. The solver provides the interval `[l, r]` within which this marginal type is located. Please return `NaN` instead of `nothing` if the marginal type is not within the interval. If not provided, the solver automatically constructs these using the `equalise_obj` function.
+
+See also: [`solve!`](@ref), [`solve`](@ref)
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility.
+    Future use should prefer the interface based on `solve(SqueezingPolicy, ...)`.
+"""
 function policy(C::Integer; kwargs...)
     working = Vector{Interval{BitVector, Float64}}(undef, 0)
 	converged = similar(working)
