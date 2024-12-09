@@ -225,7 +225,7 @@ function squeeze_branch!(p::CDCProblem{<:Squeezing})
 	return success
 end
 
-function _reinit!(p::CDCProblem{<:Squeezing})
+function _reinit!(p::CDCProblem{<:Squeezing}; scdca=p.solver.scdca, z=p.solver.z)
 	p.obj = _clearfcall(p.obj)
 	empty!(p.solver.branching)
 	if p.solver.trace !== nothing
@@ -239,11 +239,13 @@ function _reinit!(p::CDCProblem{<:Squeezing})
 		fill!(p.x, undetermined)
 	end
 	p.fx = -Inf
+	p.solver = Squeezing(scdca, p.solver.branching, z, p.solver.trace)
 	return p
 end
 
-function solve!(p::CDCProblem{<:Squeezing}; restart::Bool=false)
-	restart && (p = _reinit!(p))
+function solve!(p::CDCProblem{<:Squeezing};
+		restart::Bool=false, scdca=p.solver.scdca, z=p.solver.z)
+	restart && (p = _reinit!(p; scdca=scdca, z=z))
 	p.x, p.fx, p.state = squeeze!(p, p.x)
 	p.state == success || p.state == maxfcall_reached && return p
 	p.state = squeeze_branch!(p)

@@ -120,6 +120,7 @@ end
     p = init(SqueezingPolicy, obj, N, true, equal_obj, (-Inf, Inf),
         zero_margin=zero_margin)
     @time solve!(p);
+    x0 = deepcopy(p.x)
 
     for k in 2:length(p.x.cutoffs)
         p1 = init(Squeezing, obj, N, true,
@@ -135,4 +136,17 @@ end
         solve!(p1)
         @test p1.x == p.x.xs[k]
     end
+
+    # Verify restart is working
+    N = 20
+    f = TestObj(1.2, N, v1)
+    obj = Objective(f, SVector{N,Bool}(trues(N)))
+    p = init(SqueezingPolicy, obj, N, false, equal_obj, (-Inf, Inf),
+        zero_margin=zero_margin)
+    @time solve!(p);
+
+    f = TestObj(0.5, N, v1)
+    obj = Objective(f, SVector{N,Bool}(trues(N)))
+    solve!(p; restart=true, obj=obj, scdca=true)
+    @test p.x == x0
 end
