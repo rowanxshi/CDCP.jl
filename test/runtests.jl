@@ -1,35 +1,24 @@
-import Test
+using Test
+using CombinatorialDiscreteChoice
 
-include("example_obj.jl")
+using Random
+using Roots
+using StaticArrays
 
-function coincide(C::Int, scdca::Bool = false; seed::Int = 10)
-	(cdcp, ) = initiate(C, scdca, seed = seed)
-	
-	J = falses(C)
-	Vs = CDCP._containers(C)
-	
-	(cutoffs, policies) = CDCP.policy(C; cdcp...)
-	
-	z_wrong = nothing
-	coincide = all(0.01:0.1:50) do z
-		CDCP.naive!(J; cdcp.obj)
-		CDCP.solve!(Vs; cdcp.scdca, cdcp.obj)
-#
-		interval = searchsortedfirst(cutoffs, z)-1
-#		
-		match = (J == first(Vs) == policies[interval])
-		!match && (z_wrong = z)
-		match
-	end
-#	
-	(coincide, z_wrong)
+using CombinatorialDiscreteChoice: Equal_Obj, _clearfcall
+
+const CDCP = CombinatorialDiscreteChoice
+
+const tests = [
+    "interface",
+    "squeezing",
+    "squeezingpolicy",
+    "wrapper"
+]
+
+printstyled("Running tests:\n", color=:blue, bold=true)
+
+@time for test in tests
+    include("$test.jl")
+    println("\033[1m\033[32mPASSED\033[0m: $(test)")
 end
-
-#Test.@testset begin
-#
-#for seed in 10:10:100
-#	Test.@test first(coincide(5, true, seed = seed))
-#	Test.@test first(coincide(5, false, seed = seed))
-#end
-#
-#end
