@@ -35,8 +35,8 @@ export Objective,
 
 include("interface.jl")
 include("brute.jl")
-include("squeezing.jl")
-include("squeezingpolicy.jl")
+include("single.jl")
+include("policy.jl")
 include("wrapper.jl")
 
 end
