@@ -32,10 +32,29 @@ export Objective,
        Policy,
        SqueezingPolicy
 
-include("00helpers/interface.jl")
-include("00helpers/brute.jl")
-include("01single/single.jl")
-include("02policy/policy.jl")
-include("03compat/wrapper.jl")
+# used for everything
+include("00global/00structs.jl")
+include("00global/01interface.jl")
+
+# naive solution with exhaustion
+include("01naive/00structs.jl")
+include("01naive/01interface.jl")
+include("01naive/02naive.jl")
+
+# single-agent solution
+include("02single/00structs.jl")
+include("02single/01interface.jl")
+include("02single/02squeeze.jl")
+include("02single/03branch.jl")
+
+# policy function solution
+include("03policy/00structs.jl")
+include("03policy/01interface.jl")
+include("03policy/02squeeze.jl")
+include("03policy/03branch.jl")
+
+# for backwards compatibility
+include("04compat/00structs.jl")
+include("04compat/01interface.jl")
 
 end

@@ -11,16 +11,6 @@ function _containers(Vs)
 	(working, converged)
 end
 
-struct Interval{T <: AbstractVector{Bool}, N <: Real}
-	sub::T
-	sup::T
-	aux::T
-	l::N
-	r::N
-end
-Interval(J::AbstractVector{Bool}, l::Real, r::Real) =
-    Interval(J, deepcopy(J), deepcopy(J), l, r)
-Interval(Vs, l::Real, r::Real) = Interval(Vs..., l, r)
 
 function _checklength(::SVector{S,ItemState}, sub, sup, aux) where S
     length(sub) == length(sup) == length(aux) == S ||
