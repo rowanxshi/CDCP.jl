@@ -11,7 +11,7 @@ _lb(x::IntervalChoice) = x.lb
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	cutoffs::Vector{Z}
 	xs::Vector{A}
-    ub::Z
+	ub::Z
 end
 
 Base.size(p::Policy) = size(p.xs)
@@ -19,51 +19,43 @@ Base.@propagate_inbounds Base.getindex(p::Policy, i::Int) =
 	IntervalChoice(p.cutoffs[i], i+1>length(p.xs) ? p.ub : p.cutoffs[i+1], p.xs[i])
 
 struct DiffObj{Obj}
-    obj1::Obj
-    obj2::Obj
+	obj1::Obj
+	obj2::Obj
 end
 
 function (d::DiffObj)(z, fcall)
-    # x should have been set
-    f1, obj1 = value(d.obj1, z)
-    f2, obj2 = value(d.obj2, z)
-    fcall[] += 2
-    return f2 - f1
+	# x should have been set
+	f1, obj1 = value(d.obj1, z)
+	f2, obj2 = value(d.obj2, z)
+	fcall[] += 2
+	return f2 - f1
 end
 
 struct Equal_Obj{M,KW<:NamedTuple}
-    m::M
-    kwargs::KW
-    fcall::RefValue{Int}
+	m::M
+	kwargs::KW
+	fcall::RefValue{Int}
 end
 
 Equal_Obj(m, kwargs::NamedTuple=NamedTuple()) = Equal_Obj(m, kwargs, Ref(0))
 
 struct Default_Zero_Margin{F, O}
-    equal_obj::F
-    obj2::O
+	equal_obj::F
+	obj2::O
 end
 
-
-_copyx(obj::Objective{<:Any, A}, x::A) where A<:SVector =
-    Objective(obj.f, x, obj.fcall)
-
-# Fallback method assumes A is a mutable array
-_copyx(obj::Objective{<:Any, A}, x::A) where A =
-    Objective(obj.f, copyto!(obj.x, x), obj.fcall)
-
 function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
-    # The order of true and false matters in case there is no interior solution
-    obj = _setx(obj, true, i)
-    obj2 = _setx(_copyx(zm.obj2, obj.x), false, i)
-    return zm.equal_obj(obj, obj2, lb, ub)
+	# The order of true and false matters in case there is no interior solution
+	obj = _setx(obj, true, i)
+	obj2 = _setx(_copyx(zm.obj2, obj.x), false, i)
+	return zm.equal_obj(obj, obj2, lb, ub)
 end
 
 struct SqueezingPolicyTrace{Z}
 	i::Int
-    z::Z
-    lb::Z
-    ub::Z
+	z::Z
+	lb::Z
+	ub::Z
 	s::ItemState
 end
 
@@ -112,23 +104,23 @@ are the same objective function attached with different input vectors
 
 !!! info
 
-    In case a cutoff point is not found,
-    `equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
-    This requirement is a breaking change from earlier implementation.
+	In case a cutoff point is not found,
+	`equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
+	This requirement is a breaking change from earlier implementation.
 """
 struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 	scdca::Bool
-    pool::Vector{IntervalChoice{Z,A}}
-    squeezing::Vector{Int}
-    branching::Vector{Int}
-    lookup_zero_margin::Dict{Tuple{Int,AO},Z}
-    zero_margin::F1
-    matcheds::Vector{Vector{IntervalChoice{Z,A}}}
-    singlesolvers::Vector{S}
-    equal_obj::F2
-    obj2::O
-    zero_margin_call::RefValue{Int}
-    equal_obj_call::RefValue{Int}
-    trace::TR
-    nobranching::Bool
+	pool::Vector{IntervalChoice{Z,A}}
+	squeezing::Vector{Int}
+	branching::Vector{Int}
+	lookup_zero_margin::Dict{Tuple{Int,AO},Z}
+	zero_margin::F1
+	matcheds::Vector{Vector{IntervalChoice{Z,A}}}
+	singlesolvers::Vector{S}
+	equal_obj::F2
+	obj2::O
+	zero_margin_call::RefValue{Int}
+	equal_obj_call::RefValue{Int}
+	trace::TR
+	nobranching::Bool
 end

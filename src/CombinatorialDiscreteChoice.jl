@@ -56,5 +56,6 @@ include("03policy/03branch.jl")
 # for backwards compatibility
 include("04compat/00structs.jl")
 include("04compat/01interface.jl")
+include("04compat/02helpers.jl")
 
 end

@@ -1,5 +1,5 @@
 """
-	Squeezing{A,Z,TR} <: CDCPSolver
+    Squeezing{A,Z,TR} <: CDCPSolver
 
 A type for solving a [`CDCProblem`](@ref) with a single-agent method
 as in Arkolakis, Eckert and Shi (2023).
@@ -29,7 +29,7 @@ and SCD-C from below if `scdca` is `false`.
 """
 struct Squeezing{A,Z,TR} <: CDCPSolver
 	scdca::Bool
-    branching::Vector{A}
+	branching::Vector{A}
 	z::Z
 	trace::TR
 end

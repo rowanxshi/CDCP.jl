@@ -1,5 +1,5 @@
 """
-	BruteForce{Z} <: CDCPSolver
+    BruteForce{Z} <: CDCPSolver
 
 A type for solving a [`CDCProblem`](@ref) with a brute-force method.
 
@@ -29,32 +29,32 @@ It should only read from `x` with `getindex`.
 - `z=nothing`: An optional parameter passed as the second argument to `obj` when evaluating `obj`.
 """
 struct BruteForce{Z} <: CDCPSolver
-    ids::Vector{Int}
-    z::Z
+	ids::Vector{Int}
+	z::Z
 end
 
 # Borrowed from Combinatorics.jl just for generating the entire choice space
 struct Combinations
-    n::Int
-    t::Int
+	n::Int
+	t::Int
 end
 
 # @inline is needed for avoid the allocation
 @inline function Base.iterate(c::Combinations, s)
-    if c.t == 0 # special case to generate 1 result for t==0
-        isempty(s) && return (s, [1])
-        return
-    end
-    for i in c.t:-1:1
-        s[i] += 1
-        if s[i] > (c.n - (c.t - i))
-            continue
-        end
-        for j in i+1:c.t
-            s[j] = s[j-1] + 1
-        end
-        break
-    end
-    s[1] > c.n - c.t + 1 && return
-    (s, s)
+	if c.t == 0 # special case to generate 1 result for t==0
+		isempty(s) && return (s, [1])
+		return
+	end
+	for i in c.t:-1:1
+		s[i] += 1
+		if s[i] > (c.n - (c.t - i))
+			continue
+		end
+		for j in i+1:c.t
+			s[j] = s[j-1] + 1
+		end
+		break
+	end
+	s[1] > c.n - c.t + 1 && return
+	(s, s)
 end

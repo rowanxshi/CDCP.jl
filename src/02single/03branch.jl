@@ -1,12 +1,3 @@
-
-function branch(x::AbstractVector{ItemState}, k::Int)
-	# All aux are turned into undertermined
-	xin = _squeeze(x, included, k)
-	# copy is here only in case x is not SVector
-	xex = _squeeze(copy(x), excluded, k)
-	return xin, xex
-end
-
 function squeeze_branch!(p::CDCProblem{<:Squeezing})
 	branching, tr = p.solver.branching, p.solver.trace
 	while !isempty(branching)
@@ -23,3 +14,10 @@ function squeeze_branch!(p::CDCProblem{<:Squeezing})
 	return success
 end
 
+function branch(x::AbstractVector{ItemState}, k::Int)
+	# All aux are turned into undertermined
+	xin = _squeeze(x, included, k)
+	# copy is here only in case x is not SVector
+	xex = _squeeze(copy(x), excluded, k)
+	return xin, xex
+end
