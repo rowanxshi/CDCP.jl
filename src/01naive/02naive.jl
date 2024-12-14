@@ -1,13 +1,13 @@
-function solve!(p::CDCProblem{<:BruteForce}; restart::Bool=true)
-	obj, ids, z = p.obj, p.solver.ids, p.solver.z
+function solve!(cdcp::CDCProblem{<:BruteForce}; restart::Bool=true)
+	obj, ids, z = cdcp.obj, cdcp.solver.ids, cdcp.solver.z
 	restart && (resize!(ids, 1); ids[1] = 0)
-	S = length(p.x)
+	S = length(cdcp.x)
 	# The case where no item is chosen
 	fill!(obj.x, false)
 	val, obj = value(obj, z)
-	if val > p.fx
-		p.fx = val
-		p.x .= obj.x
+	if val > cdcp.fx
+		cdcp.fx = val
+		cdcp.x .= obj.x
 	end
 	# If restart = false, continue from the first combination of the same length as ids
 	n1 = length(ids)
@@ -23,14 +23,14 @@ function solve!(p::CDCProblem{<:BruteForce}; restart::Bool=true)
 		while next !== nothing
 			_setchoice(obj, ids)
 			val, obj = value(obj, z)
-			if val > p.fx
-				p.fx = val
-				p.x .= obj.x
+			if val > cdcp.fx
+				cdcp.fx = val
+				cdcp.x .= obj.x
 			end
 			next = iterate(C, ids)
 		end
 	end
-	p.obj = obj
-	return p
+	cdcp.obj = obj
+	return cdcp
 end
 

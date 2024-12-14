@@ -18,8 +18,8 @@ function naive!(J::AbstractVector{Bool}; obj, z=nothing)
 	Base.depwarn("Consider the new interface for solving the brute-force problem with `BruteForce`", :naive!)
 	C = length(J)
 	wobj = Objective(obj, copy(J))
-	p = solve(BruteForce, wobj, C; z=z)
-	copyto!(J, p.x)
+	cdcp = solve(BruteForce, wobj, C; z=z)
+	copyto!(J, cdcp.x)
 end
 
 """
@@ -44,12 +44,12 @@ function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing, containers
 	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
 	C = length(sub)
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
-	p = init(Squeezing, wobj, C, scdca; z=z, restart=restart)
+	cdcp = init(Squeezing, wobj, C, scdca; z=z, restart=restart)
 	# Allow setting initial choice by (sub, sup, aux)
-	restart || (p.x = _parse_triplet(p.x, sub, sup, aux))
-	solve!(p)
+	restart || (cdcp.x = _parse_triplet(cdcp.x, sub, sup, aux))
+	solve!(cdcp)
 	# Translate result
-	_invert_state!(sub, sup, aux, p.x)
+	_invert_state!(sub, sup, aux, cdcp.x)
 	return sup
 end
 
@@ -86,9 +86,9 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
 	wzero_dj = Wrapped_Zero_D_j_Obj(zero_D_j_obj, fill(false, C))
 
-	p = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, trace=trace, nobranching=nobranching, singlekw=singlekw, kwargs...)
+	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, trace=trace, nobranching=nobranching, singlekw=singlekw, kwargs...)
 
-	pool, squeezing = p.solver.pool, p.solver.squeezing
+	pool, squeezing = cdcp.solver.pool, cdcp.solver.squeezing
 
 	# Handle initial choices passed via (cutoffs, policies)
 	_initialized = false
@@ -119,15 +119,15 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 		end  
 	end
 
-	solve!(p)
+	solve!(cdcp)
 
 	# Copy results back
-	resize!(cutoffs, length(p.x.cutoffs)+1)
-	copyto!(cutoffs, p.x.cutoffs)
-	cutoffs[end] = p.x.ub
-	resize!(policies, length(p.x.xs))
+	resize!(cutoffs, length(cdcp.x.cutoffs)+1)
+	copyto!(cutoffs, cdcp.x.cutoffs)
+	cutoffs[end] = cdcp.x.ub
+	resize!(policies, length(cdcp.x.xs))
 	for i in eachindex(policies)
-		policies[i] = BitVector(setsub(p.x.xs[i]))
+		policies[i] = BitVector(setsub(cdcp.x.xs[i]))
 	end
 	return cutoffs, policies
 end

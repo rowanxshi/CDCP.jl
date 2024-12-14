@@ -1,17 +1,17 @@
-function branching!(p::CDCProblem{<:SqueezingPolicy})
-	pool, branching, matcheds = p.solver.pool, p.solver.branching, p.solver.matcheds
+function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
+	pool, branching, matcheds = cdcp.solver.pool, cdcp.solver.branching, cdcp.solver.matcheds
 	ntasks = length(matcheds)
 	for m in matcheds
 		empty!(m) # Just to be safe
 	end
 	if ntasks == 1 # No multithreading
 		for k in branching
-			branching!(p, k, 1)
+			branching!(cdcp, k, 1)
 		end
 	else
 		@sync for itask in 1:ntasks
 			Threads.@spawn for ik in itask:ntasks:length(branching)
-				branching!(p, branching[ik], itask)
+				branching!(cdcp, branching[ik], itask)
 			end
 		end
 	end
@@ -19,40 +19,39 @@ function branching!(p::CDCProblem{<:SqueezingPolicy})
 	return inprogress
 end
 
-function branching!(p::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
-	pool, matched = p.solver.pool, p.solver.matcheds[itask]
-	x = pool[k]
-	sp = p.solver.singlesolvers[itask]
-	xl = _solvesingle!(sp, x.lb, x.x)
-	xr = _solvesingle!(sp, x.ub, x.x)
+function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
+	pool, matched = cdcp.solver.pool, cdcp.solver.matcheds[itask]
+	intervalchoice = pool[k]
+	sp = cdcp.solver.singlesolvers[itask]
+	xl = _solvesingle!(sp, intervalchoice.lb, intervalchoice.x)
+	xr = _solvesingle!(sp, intervalchoice.ub, intervalchoice.x)
 	if xl == xr
-		pool[k] = IntervalChoice(x.lb, x.ub, xl)
+		pool[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, xl)
 	else
-		search!(sp, matched, x.lb, xl, x.ub, xr, x.x, p.solver.obj2, p.solver.equal_obj)
+		search!(sp, matched, intervalchoice.lb, xl, intervalchoice.ub, xr, intervalchoice.x, cdcp.solver.obj2, cdcp.solver.equal_obj)
 		# Overwrite the old interval with aux
 		pool[k] = pop!(matched)
 	end
 end
 
-function _solvesingle!(p::CDCProblem{<:Squeezing}, z, x0)
-	_reset!(p, z, x0)
-	solve!(p)
-	p.state == success || error("single-agenet solver fails with z = ", p.solver.z)
-	return p.x
+function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, x0)
+	_reset!(cdcp, z, x0)
+	solve!(cdcp)
+	cdcp.state == success || error("single-agenet solver fails with z = ", cdcp.solver.z)
+	return cdcp.x
 end
 
-function search!(p::CDCProblem{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, equal_obj)
+function search!(cdcp::CDCProblem{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, equal_obj)
 	zl, xl, zr, xr = zl0, xl0, zr0, xr0
 	while true
 		# xl and xr should always be different here
-		obj1 = _setchoice(p.obj, setsub(xl))
+		obj1 = _setchoice(cdcp.obj, setsub(xl))
 		obj2 = _setchoice(obj2, setsub(xr))
 		z, obj = equal_obj(obj1, obj2, zl, zr)
-		# p.solver.equal_obj_call[] += 1
 		# ! TODO Rowan proof double-check
 		if zl < z < zr # Additional cutoff points in between
-			x0next = p.solver.scdca ? x0 : setx0scdcb(x0, xl)
-			xnew = _solvesingle!(p, z, x0next)
+			x0next = cdcp.solver.scdca ? x0 : setx0scdcb(x0, xl)
+			xnew = _solvesingle!(cdcp, z, x0next)
 			if xnew == xl || xnew == xr
 				push!(matched, IntervalChoice(zl, z, xl), IntervalChoice(z, zr, xr))
 				if zr != zr0 # Move to the interval on the right
@@ -96,19 +95,19 @@ function setx0scdcb(x0::SVector{S,ItemState}, xl::SVector{S,ItemState}) where S
 	end
 end
 
-function concat!(p::CDCProblem{<:SqueezingPolicy})
-	pool = p.solver.pool
+function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
+	pool = cdcp.solver.pool
 	sort!(pool, by=_lb)
-	cutoffs = resize!(p.x.cutoffs, 1)
-	xs = resize!(p.x.xs, 1)
+	cutoffs = resize!(cdcp.x.cutoffs, 1)
+	xs = resize!(cdcp.x.xs, 1)
 	cutoffs[1] = pool[1].lb
 	xs[1] = xlast = pool[1].x
-	for x in pool
+	for intervalchoice in pool
 		# Filter out potential singletons
-		if x.lb < x.ub && x.x != xlast
-			push!(cutoffs, x.lb)
-			push!(xs, x.x)
-			xlast = x.x
+		if intervalchoice.lb < intervalchoice.ub && intervalchoice.x != xlast
+			push!(cutoffs, intervalchoice.lb)
+			push!(xs, intervalchoice.x)
+			xlast = intervalchoice.x
 		end
 	end
 	return success

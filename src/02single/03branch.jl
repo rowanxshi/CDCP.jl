@@ -1,11 +1,11 @@
-function squeeze_branch!(p::CDCProblem{<:Squeezing})
-	branching, tr = p.solver.branching, p.solver.trace
+function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
+	branching, tr = cdcp.solver.branching, cdcp.solver.trace
 	while !isempty(branching)
 		x = pop!(branching)
 		tr === nothing || push!(tr, similar(tr[1], 0))
-		x, fx, state = squeeze!(p, x)
+		x, fx, state = squeeze!(cdcp, x)
 		if state == success
-			fx > p.fx && (p.x = x; p.fx = fx)
+			fx > cdcp.fx && (cdcp.x = x; cdcp.fx = fx)
 		elseif state == maxfcall_reached
 			push!(branching, x) # Put x back
 			return maxfcall_reached

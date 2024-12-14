@@ -1,17 +1,17 @@
 struct IntervalChoice{Z,A<:AbstractVector{ItemState}}# <: AbstractVector{ItemState}
 	lb::Z
 	ub::Z
-	x::A
+	x::A # TODO: itemstates
 end
 
-function Base.size(ic::IntervalChoice)
-	size(ic.x)
+function Base.size(intervalchoice::IntervalChoice)
+	size(intervalchoice.x)
 end
-Base.@propagate_inbounds function Base.getindex(ic::IntervalChoice, i::Int)
-	ic.x[i]
+Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, i::Int)
+	intervalchoice.x[i]
 end
-function _lb(x::IntervalChoice)
-	x.lb
+function _lb(intervalchoice::IntervalChoice)
+	intervalchoice.lb
 end
 
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
@@ -20,11 +20,11 @@ struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	ub::Z
 end
 
-function Base.size(p::Policy)
-	size(p.xs)
+function Base.size(policy::Policy)
+	size(policy.xs)
 end
-Base.@propagate_inbounds function Base.getindex(p::Policy, i::Int)
-	IntervalChoice(p.cutoffs[i], i+1>length(p.xs) ? p.ub : p.cutoffs[i+1], p.xs[i])
+Base.@propagate_inbounds function Base.getindex(policy::Policy, i::Int)
+	IntervalChoice(policy.cutoffs[i], i+1>length(policy.xs) ? policy.ub : policy.cutoffs[i+1], policy.xs[i])
 end
 
 struct DiffObj{Obj}
@@ -56,7 +56,7 @@ struct Default_Zero_Margin{F, O}
 end
 
 function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
-	# The order of true and false matters in case there is no interior solution
+	# the order of true and false matters in case there is no interior solution
 	obj = _setx(obj, true, i)
 	obj2 = _setx(_copyx(zm.obj2, obj.x), false, i)
 	return zm.equal_obj(obj, obj2, lb, ub)
@@ -67,7 +67,7 @@ struct SqueezingPolicyTrace{Z}
 	z::Z
 	lb::Z
 	ub::Z
-	s::ItemState
+	s::ItemState # TODO itemstate
 end
 
 """
@@ -77,7 +77,7 @@ A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, 
 
 # Usage
 	solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
-	solve!(p::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
+	solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
 
 Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the use of the policy method for the problem. Users are required to specify the objective function `obj` that returns the value evaluated at a choice vector `x` with a parameter `z` that is a number. `obj` must have a method of `obj(x, z)` with `x` being a Boolean choice vector. `obj` must not restrict the specific type of `x` but only assume `x` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `x` when it is called. It should only read from `x` with `getindex`. The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`. `zbounds` determines the range of the parameter `z`, which could be `(-Inf, Inf)` if `z` can be any real number.
 

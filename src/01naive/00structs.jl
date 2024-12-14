@@ -11,7 +11,7 @@ It is provided only for illustration.
 
 # Usage
 	solve(BruteForce, obj; z=nothing)
-	solve!(p::CDCProblem{<:BruteForce}; restart::Bool=false)
+	solve!(cdcp::CDCProblem{<:BruteForce}; restart::Bool=false)
 
 Pass the type `BruteForce` as the first argument to `solve`
 indicates the use of the brute-force method for the problem.

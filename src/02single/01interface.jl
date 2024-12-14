@@ -1,9 +1,9 @@
-function solve!(p::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=p.solver.scdca, z=p.solver.z)
-	restart && (p = _reinit!(p; scdca=scdca, z=z))
-	p.x, p.fx, p.state = squeeze!(p, p.x)
-	p.state == success || p.state == maxfcall_reached && return p
-	p.state = squeeze_branch!(p)
-	return p
+function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.solver.scdca, z=cdcp.solver.z)
+	restart && (cdcp = _reinit!(cdcp; scdca=scdca, z=z))
+	cdcp.x, cdcp.fx, cdcp.state = squeeze!(cdcp, cdcp.x)
+	cdcp.state == success || cdcp.state == maxfcall_reached && return cdcp
+	cdcp.state = squeeze_branch!(cdcp)
+	return cdcp
 end
 
 function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, trace::Bool=false, valtype::Type=Float64, kwargs...)
@@ -18,22 +18,22 @@ function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, trace::Bool=fal
 	return Squeezing(scdca, A[], z, tr), x
 end
 
-function _reinit!(p::CDCProblem{<:Squeezing}; scdca=p.solver.scdca, z=p.solver.z)
-	p.obj = _clearfcall(p.obj)
-	empty!(p.solver.branching)
-	if p.solver.trace !== nothing
-		empty!(p.solver.trace)
-		push!(eltype(p.solver.trace)())
+function _reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp.solver.z)
+	cdcp.obj = _clearfcall(cdcp.obj)
+	empty!(cdcp.solver.branching)
+	if cdcp.solver.trace !== nothing
+		empty!(cdcp.solver.trace)
+		push!(eltype(cdcp.solver.trace)())
 	end
-	if p.x isa SVector
-		S = length(p.x)
-		p.x = _fillstate(SVector{S,ItemState}, undetermined)
+	if cdcp.x isa SVector
+		S = length(cdcp.x)
+		cdcp.x = _fillstate(SVector{S,ItemState}, undetermined)
 	else
-		fill!(p.x, undetermined)
+		fill!(cdcp.x, undetermined)
 	end
-	p.fx = -Inf
-	p.solver = Squeezing(scdca, p.solver.branching, z, p.solver.trace)
-	return p
+	cdcp.fx = -Inf
+	cdcp.solver = Squeezing(scdca, cdcp.solver.branching, z, cdcp.solver.trace)
+	return cdcp
 end
 
 function setsub(x::SVector{S,ItemState}) where S

@@ -1,4 +1,4 @@
-function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
+function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 	S = length(x)
 	fx = -Inf
 	lastaux = nothing
@@ -6,12 +6,12 @@ function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 	if i === nothing
 		lastaux = findfirst(==(aux), x) # May find aux from initial value
 		if lastaux === nothing # Last value set by branching
-			fx, obj = value(p.obj, p.solver.z)
-			p.obj = obj
+			fx, obj = value(cdcp.obj, cdcp.solver.z)
+			cdcp.obj = obj
 		end
 	end
-	while i !== nothing && p.obj.fcall < p.maxfcall
-		x, fx, itemstate = squeeze!(p, x, i)
+	while i !== nothing && cdcp.obj.fcall < cdcp.maxfcall
+		x, fx, itemstate = squeeze!(cdcp, x, i)
 		if itemstate == aux
 			lastaux = lastaux === nothing ? i : min(lastaux, i)
 		else
@@ -28,16 +28,16 @@ function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 	# Whenever squeeze! makes progress, any aux is changed to undetermined
 	# If aux is in x, it can only be that lastaux !== nothing
 	if lastaux === nothing
-		state = p.obj.fcall < p.maxfcall ? success : maxfcall_reached
+		state = cdcp.obj.fcall < cdcp.maxfcall ? success : maxfcall_reached
 	else
-		push!(p.solver.branching, branch(x, lastaux)...)
+		push!(cdcp.solver.branching, branch(x, lastaux)...)
 		state = inprogress
 	end
 	return x, fx, state
 end
 
-function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
-	obj, scdca, z, tr = p.obj, p.solver.scdca, p.solver.z, p.solver.trace
+function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
+	obj, scdca, z, tr = cdcp.obj, cdcp.solver.scdca, cdcp.solver.z, cdcp.solver.trace
 	# For excluding: look at the best case
 	if scdca
 		obj = _setchoice(obj, setsub(x))
@@ -51,7 +51,7 @@ function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::I
 	if exclude
 		xnew = _squeeze(x, excluded, i)
 		tr === nothing || push!(tr[end], SqueezingTrace(i, x, excluded, f0))
-		p.obj = obj
+		cdcp.obj = obj
 		return xnew, f0, excluded
 	end
 
@@ -68,14 +68,14 @@ function squeeze!(p::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::I
 	if include
 		xnew = _squeeze(x, included, i)
 		tr === nothing || push!(tr[end], SqueezingTrace(i, x, included, f1))
-		p.obj = obj
+		cdcp.obj = obj
 		return xnew, f1, included
 	end
 
 	xnew = _setitemstate(x, aux, i)
-	fx = convert(typeof(p.fx), -Inf)
+	fx = convert(typeof(cdcp.fx), -Inf)
 	tr === nothing || push!(tr[end], SqueezingTrace(i, x, aux, fx))
-	p.obj = obj
+	cdcp.obj = obj
 	return xnew, fx, aux
 end
 
