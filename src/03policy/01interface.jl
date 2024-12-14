@@ -43,10 +43,10 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
 end
 
-function _reset!(cdcp::CDCProblem{<:Squeezing}, z, x)
+function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
 	cdcp.state = inprogress
 	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
-	cdcp.x = x
+	cdcp.x = itemstates
 	cdcp.fx = -Inf
 	return cdcp
 end

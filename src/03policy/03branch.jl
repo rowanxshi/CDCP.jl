@@ -23,57 +23,57 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	intervalchoices, matched = cdcp.solver.intervalchoices, cdcp.solver.matcheds[itask]
 	intervalchoice = intervalchoices[k]
 	sp = cdcp.solver.singlesolvers[itask]
-	xl = _solvesingle!(sp, intervalchoice.lb, intervalchoice.itemstates)
-	xr = _solvesingle!(sp, intervalchoice.ub, intervalchoice.itemstates)
-	if xl == xr
-		intervalchoices[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, xl)
+	itemstates_left = _solvesingle!(sp, intervalchoice.lb, intervalchoice.itemstates)
+	itemstates_right = _solvesingle!(sp, intervalchoice.ub, intervalchoice.itemstates)
+	if itemstates_left == itemstates_right
+		intervalchoices[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, itemstates_left)
 	else
-		search!(sp, matched, intervalchoice.lb, xl, intervalchoice.ub, xr, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
+		search!(sp, matched, intervalchoice.lb, itemstates_left, intervalchoice.ub, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
 		# Overwrite the old interval with aux
 		intervalchoices[k] = pop!(matched)
 	end
 end
 
-function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, x0)
-	_reset!(cdcp, z, x0)
+function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates0)
+	_reset!(cdcp, z, itemstates0)
 	solve!(cdcp)
 	cdcp.state == success || error("single-agenet solver fails with z = ", cdcp.solver.z)
 	return cdcp.x
 end
 
-function search!(cdcp::CDCProblem{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0, obj2, equal_obj)
-	zl, xl, zr, xr = zl0, xl0, zr0, xr0
+function search!(cdcp::CDCProblem{<:Squeezing}, matched, z_left0, itemstates_left0, z_right0, itemstates_right0, itemstates0, obj2, equal_obj)
+	z_left, itemstates_left, z_right, itemstates_right = z_left0, itemstates_left0, z_right0, itemstates_right0
 	while true
-		# xl and xr should always be different here
-		obj1 = _setchoice(cdcp.obj, setsub(xl))
-		obj2 = _setchoice(obj2, setsub(xr))
-		z, obj = equal_obj(obj1, obj2, zl, zr)
+		# itemstates_left and itemstates_right should always be different here
+		obj1 = _setchoice(cdcp.obj, setsub(itemstates_left))
+		obj2 = _setchoice(obj2, setsub(itemstates_right))
+		z_middle, _ = equal_obj(obj1, obj2, z_left, z_right)
 		# ! TODO Rowan proof double-check
-		if zl < z < zr # Additional cutoff points in between
-			x0next = cdcp.solver.scdca ? x0 : setx0scdcb(x0, xl)
-			xnew = _solvesingle!(cdcp, z, x0next)
-			if xnew == xl || xnew == xr
-				push!(matched, IntervalChoice(zl, z, xl), IntervalChoice(z, zr, xr))
-				if zr != zr0 # Move to the interval on the right
-					zl, xl = zr, xr
-					zr, xr = zr0, xr0
+		if z_left < z_middle < z_right # Additional cutoff points in between
+			itemstates0 = cdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
+			itemstates_new = _solvesingle!(cdcp, z_middle, itemstates0)
+			if itemstates_new == itemstates_left || itemstates_new == itemstates_right
+				push!(matched, IntervalChoice(z_left, z_middle, itemstates_left), IntervalChoice(z_middle, z_right, itemstates_right))
+				if z_right != z_right0 # Move to the interval on the right
+					z_left, itemstates_left = z_right, itemstates_right
+					z_right, itemstates_right = z_right0, itemstates_right0
 				else
 					return
 				end
 			else # More cutoff points on the left
-				zr, xr = z, xnew
+				z_right, itemstates_right = z_middle, itemstates_new
 			end
 		else # No split of interval
-			if z == zl
-				push!(matched, IntervalChoice(zl, zr, xr))
-			elseif z == zr
-				push!(matched, IntervalChoice(zl, zr, xl))
+			if z_middle == z_left
+				push!(matched, IntervalChoice(z_left, z_right, itemstates_right))
+			elseif z_middle == z_right
+				push!(matched, IntervalChoice(z_left, z_right, itemstates_left))
 			else
 				error("z is not in between")
 			end
-			if zr != zr0 # Move to the interval on the right
-				zl, xl = zr, xr
-				zr, xr = zr0, xr0
+			if z_right != z_right0 # Move to the interval on the right
+				z_left, itemstates_left = z_right, itemstates_right
+				z_right, itemstates_right = z_right0, itemstates_right0
 			else
 				return
 			end
@@ -82,16 +82,16 @@ function search!(cdcp::CDCProblem{<:Squeezing}, matched, zl0, xl0, zr0, xr0, x0,
 end
 
 # With SCD-C from below, choice for an item only switches once
-function setx0scdcb(x0::SVector{S,ItemState}, xl::SVector{S,ItemState}) where S
+function setitemstates_scdcb(itemstates::SVector{S,ItemState}, itemstates_left::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(ifelse(xl[$i]==included, included, x0[$i])))
+			push!(ex.args, :(ifelse(itemstates_left[$i]==included, included, itemstates[$i])))
 		end
 		return :(SVector{S,ItemState}($ex))
 	else
 		return SVector{S,ItemState}(
-			ntuple(i->ifelse(x[i]==included, included, x0[i]), S))
+			ntuple(i->ifelse(itemstates_left[i]==included, included, itemstates[i]), S))
 	end
 end
 
