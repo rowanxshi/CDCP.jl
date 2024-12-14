@@ -76,7 +76,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	end
 	cdcp.fx = convert(typeof(cdcp.fx), -Inf)
 	cdcp.state = inprogress
-	sol = cdcp.solver
+	solver = cdcp.solver
 	obj2 = deepcopy(cdcp.obj)
 	# Harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...)
@@ -89,22 +89,22 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	resize!(sol.pool, 1)
-	sol.pool[1] = cdcp.x[1]
-	resize!(sol.squeezing, 1)
-	sol.squeezing[1] = 1
-	empty!(sol.branching)
-	empty!(sol.lookup_zero_margin)
-	for m in sol.matcheds
+	resize!(solver.pool, 1)
+	solver.pool[1] = cdcp.x[1]
+	resize!(solver.squeezing, 1)
+	solver.squeezing[1] = 1
+	empty!(solver.branching)
+	empty!(solver.lookup_zero_margin)
+	for m in solver.matcheds
 		empty!(m)
 	end
-	for s in sol.singlesolvers
+	for s in solver.singlesolvers
 		s.obj = cdcp.obj
 		_reinit!(s; scdca=scdca)
 	end
-	sol.zero_margin_call[] = 0
-	sol.equal_obj_call[] = 0
-	cdcp.solver = SqueezingPolicy(scdca, sol.pool, sol.squeezing, sol.branching, sol.lookup_zero_margin, zero_margin, sol.matcheds, sol.singlesolvers, equal_obj, obj2, sol.zero_margin_call, sol.equal_obj_call, sol.nobranching)
+	solver.zero_margin_call[] = 0
+	solver.equal_obj_call[] = 0
+	cdcp.solver = SqueezingPolicy(scdca, solver.pool, solver.squeezing, solver.branching, solver.lookup_zero_margin, zero_margin, solver.matcheds, solver.singlesolvers, equal_obj, obj2, solver.zero_margin_call, solver.equal_obj_call, solver.nobranching)
 	return cdcp
 end
 
