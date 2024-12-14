@@ -29,14 +29,13 @@ export Objective,
        Squeezing,
        SqueezingTrace,
 
-       StateChoice,
        Policy,
        SqueezingPolicy
 
-include("interface.jl")
-include("brute.jl")
-include("single.jl")
-include("policy.jl")
-include("wrapper.jl")
+include("00helpers/interface.jl")
+include("00helpers/brute.jl")
+include("01single/single.jl")
+include("02policy/policy.jl")
+include("03compat/wrapper.jl")
 
 end
