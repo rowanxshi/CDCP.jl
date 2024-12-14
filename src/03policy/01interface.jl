@@ -11,18 +11,18 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 	return cdcp
 end
 
-function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, x0=nothing, ntasks=1, trace::Bool=false, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
+function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, trace::Bool=false, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
 	S = length(obj.x)
-	if x0 === nothing
+	if policy0 === nothing
 		if obj.x isa SVector
 			allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
-			x = Policy([zbounds[1]], [allundetermined], zbounds[2])
+			policy = Policy([zbounds[1]], [allundetermined], zbounds[2])
 		else
 			allundetermined = fill(undetermined, S)
-			x = Policy([zbounds[1]], [allundetermined], zbounds[2])
+			policy = Policy([zbounds[1]], [allundetermined], zbounds[2])
 		end
 	else
-		x = x0
+		policy = policy0
 	end
 	tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
 	obj2 = deepcopy(obj)
@@ -37,11 +37,11 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	pool = [x[i] for i in eachindex(x.xs)]
-	A = eltype(x.xs)
+	pool = [policy[i] for i in eachindex(policy.xs)]
+	A = eltype(policy.xs)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	ss = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, pool, collect(1:length(x.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), tr, nobranching), x
+	return SqueezingPolicy(scdca, pool, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), tr, nobranching), policy
 end
 
 function _reset!(cdcp::CDCProblem{<:Squeezing}, z, x)
