@@ -26,6 +26,9 @@ struct Interval{T <: AbstractVector{Bool}, N <: Real}
 	l::N
 	r::N
 end
-Interval(J::AbstractVector{Bool}, l::Real, r::Real) =
+function Interval(J::AbstractVector{Bool}, l::Real, r::Real)
 	Interval(J, deepcopy(J), deepcopy(J), l, r)
-Interval(Vs, l::Real, r::Real) = Interval(Vs..., l, r)
+end
+function Interval(Vs, l::Real, r::Real)
+	Interval(Vs..., l, r)
+end

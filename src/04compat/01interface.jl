@@ -10,7 +10,9 @@ See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
 	This method exists only for the sake of backward compatibility.
 	Future use should prefer the interface based on `solve(BruteForce, ...)`.
 """
-naive(C::Integer; obj, z=nothing) = naive!(falses(C); obj, z)
+function naive(C::Integer; obj, z=nothing)
+	naive!(falses(C); obj, z)
+end
 
 function naive!(J::AbstractVector{Bool}; obj, z=nothing)
 	Base.depwarn("Consider the new interface for solving the brute-force problem with `BruteForce`", :naive!)
@@ -37,8 +39,7 @@ function solve(C::Integer; obj, kwargs...)
 	return solve(Squeezing, wobj, scdca; z=z, restart=restart)
 end
 
-function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing,
-		containers = nothing, restart::Bool = true, z=nothing, kwargs...)
+function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing, containers = nothing, restart::Bool = true, z=nothing, kwargs...)
 	Base.depwarn("Consider the new interface for solving the single-agent problem with `Squeezing`", :solve!)
 	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
 	C = length(sub)
@@ -74,12 +75,7 @@ function policy(C::Integer; kwargs...)
 end
 
 # D_j_obj is not used and hence ignored
-function policy!(cutoffspolicies, containers, C::Integer;
-		scdca::Bool, obj, equalise_obj, D_j_obj=nothing,
-		zero_D_j_obj = zero_D_j(equalise_obj, falses(C)),
-		show_time::Bool = false, emptyset = falses(C), restart::Bool = true,
-		ntasks=1, trace::Bool=false,
-		nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
+function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj=nothing, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), restart::Bool = true, ntasks=1, trace::Bool=false, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
 	Base.depwarn("Consider the new interface for solving the policy problem with `SqueezingPolicy`", :policy!)
 
 	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
@@ -90,9 +86,7 @@ function policy!(cutoffspolicies, containers, C::Integer;
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
 	wzero_dj = Wrapped_Zero_D_j_Obj(zero_D_j_obj, fill(false, C))
 
-	p = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf);
-		zero_margin=wzero_dj, ntasks=ntasks, trace=trace, nobranching=nobranching,
-		singlekw=singlekw, kwargs...)
+	p = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, trace=trace, nobranching=nobranching, singlekw=singlekw, kwargs...)
 
 	pool, squeezing = p.solver.pool, p.solver.squeezing
 

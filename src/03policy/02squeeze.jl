@@ -1,5 +1,4 @@
-function squeeze!(p::CDCProblem{<:SqueezingPolicy})
-	pool, squeezing, branching = p.solver.pool, p.solver.squeezing, p.solver.branching
+function squeeze!(p::CDCProblem{<:SqueezingPolicy}) pool, squeezing, branching = p.solver.pool, p.solver.squeezing, p.solver.branching
 	while !isempty(squeezing)
 		k = pop!(squeezing)
 		x = pool[k]
@@ -78,9 +77,11 @@ function squeeze_exclude!(p::CDCProblem{<:SqueezingPolicy}, x::IntervalChoice, i
 	end
 end
 
-_squeeze(x::IntervalChoice, s::ItemState, i::Int) =
+function _squeeze(x::IntervalChoice, s::ItemState, i::Int)
 	IntervalChoice(x.lb, x.ub, _squeeze(x.x, s, i))
+end
 
-_setitemstate(x::IntervalChoice, s::ItemState, i::Int) =
+function _setitemstate(x::IntervalChoice, s::ItemState, i::Int)
 	IntervalChoice(x.lb, x.ub, _setitemstate(x.x, s, i))
+end
 

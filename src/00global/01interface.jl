@@ -10,12 +10,11 @@ For details on usage,
 see [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`BruteForce`](@ref) respectively.
 An in-place version [`solve!`](@ref) can be used when a `CDCProblem` is preallocated.
 """
-solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver =
+function solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver
 	solve!(init(M, args...; kwargs...))
+end
 
-function init(::Type{M}, obj, S::Integer, args...;
-		maxfcall::Integer=1_000_000_000, valtype::Type=Float64,
-		kwargs...) where M<:CDCPSolver
+function init(::Type{M}, obj, S::Integer, args...; maxfcall::Integer=1_000_000_000, valtype::Type=Float64, kwargs...) where M<:CDCPSolver
 	S = Int(S)
 	S > 0 || throw(ArgumentError("the number of items S must be a positive integer"))
 	if obj isa Objective
@@ -31,5 +30,6 @@ function init(::Type{M}, obj, S::Integer, args...;
 end
 
 # Default threshold for determining whether SVector is used for a choice
-_static_threshold() = 256
-
+function _static_threshold()
+	256
+end

@@ -12,8 +12,7 @@ function _containers(Vs)
 end
 
 function _checklength(::SVector{S,ItemState}, sub, sup, aux) where S
-	length(sub) == length(sup) == length(aux) == S ||
-		throw(ArgumentError("length of sub, sup, aux are inconsistent with C"))
+	length(sub) == length(sup) == length(aux) == S || throw(ArgumentError("length of sub, sup, aux are inconsistent with C"))
 end
 
 function _parse_state(sub::Bool, sup::Bool, isaux::Bool)

@@ -1,5 +1,4 @@
-function solve!(p::CDCProblem{<:Squeezing};
-		restart::Bool=false, scdca=p.solver.scdca, z=p.solver.z)
+function solve!(p::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=p.solver.scdca, z=p.solver.z)
 	restart && (p = _reinit!(p; scdca=scdca, z=z))
 	p.x, p.fx, p.state = squeeze!(p, p.x)
 	p.state == success || p.state == maxfcall_reached && return p
@@ -7,8 +6,7 @@ function solve!(p::CDCProblem{<:Squeezing};
 	return p
 end
 
-function _init(::Type{<:Squeezing}, obj, scdca::Bool;
-		z=nothing, trace::Bool=false, valtype::Type=Float64, kwargs...)
+function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, trace::Bool=false, valtype::Type=Float64, kwargs...)
 	S = length(obj.x)
 	if obj.x isa SVector
 		x = _fillstate(SVector{S,ItemState}, undetermined)
@@ -62,7 +60,9 @@ function setsup(x::SVector{S,ItemState}) where S
 	end
 end
 
-_setitemstate(x::SVector{S,ItemState}, s::ItemState, i::Int) where S = setindex(x, s, i)
+function _setitemstate(x::SVector{S,ItemState}, s::ItemState, i::Int) where S
+	setindex(x, s, i)
+end
 
 function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
 	if @generated
@@ -76,5 +76,6 @@ function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
 	end
 end
 
-_setchoice(obj::Objective{<:Any,A}, x::A) where A =
+function _setchoice(obj::Objective{<:Any,A}, x::A) where A
 	Objective(obj.f, x, obj.fcall)
+end

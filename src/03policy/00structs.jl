@@ -4,9 +4,15 @@ struct IntervalChoice{Z,A<:AbstractVector{ItemState}}# <: AbstractVector{ItemSta
 	x::A
 end
 
-Base.size(ic::IntervalChoice) = size(ic.x)
-Base.@propagate_inbounds Base.getindex(ic::IntervalChoice, i::Int) = ic.x[i]
-_lb(x::IntervalChoice) = x.lb
+function Base.size(ic::IntervalChoice)
+	size(ic.x)
+end
+Base.@propagate_inbounds function Base.getindex(ic::IntervalChoice, i::Int)
+	ic.x[i]
+end
+function _lb(x::IntervalChoice)
+	x.lb
+end
 
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	cutoffs::Vector{Z}
@@ -14,9 +20,12 @@ struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	ub::Z
 end
 
-Base.size(p::Policy) = size(p.xs)
-Base.@propagate_inbounds Base.getindex(p::Policy, i::Int) =
+function Base.size(p::Policy)
+	size(p.xs)
+end
+Base.@propagate_inbounds function Base.getindex(p::Policy, i::Int)
 	IntervalChoice(p.cutoffs[i], i+1>length(p.xs) ? p.ub : p.cutoffs[i+1], p.xs[i])
+end
 
 struct DiffObj{Obj}
 	obj1::Obj
@@ -37,7 +46,9 @@ struct Equal_Obj{M,KW<:NamedTuple}
 	fcall::RefValue{Int}
 end
 
-Equal_Obj(m, kwargs::NamedTuple=NamedTuple()) = Equal_Obj(m, kwargs, Ref(0))
+function Equal_Obj(m, kwargs::NamedTuple=NamedTuple())
+	Equal_Obj(m, kwargs, Ref(0))
+end
 
 struct Default_Zero_Margin{F, O}
 	equal_obj::F
@@ -62,35 +73,15 @@ end
 """
     SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 
-A type for solving a [`CDCProblem`](@ref) with a policy method
-as in Arkolakis, Eckert and Shi (2023).
+A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, Eckert and Shi (2023).
 
 # Usage
 	solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
 	solve!(p::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
 
-Pass the type `SqueezingPolicy` as the first argument to `solve`
-indicates the use of the policy method for the problem.
-Users are required to specify the objective function `obj`
-that returns the value evaluated at a choice vector `x`
-with a parameter `z` that is a number.
-`obj` must have a method of `obj(x, z)`
-with `x` being a Boolean choice vector.
-`obj` must not restrict the specific type of `x`
-but only assume `x` is a vector with element type being `Bool`.
-Specifically, `obj` must *not* try to modify the elements in `x` when it is called.
-It should only read from `x` with `getindex`.
-The problem should satisfy SCD-C from above if `scdca` is `true`
-and SCD-C from below if `scdca` is `false`.
-`zbounds` determines the range of the parameter `z`,
-which could be `(-Inf, Inf)` if `z` can be any real number.
+Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the use of the policy method for the problem. Users are required to specify the objective function `obj` that returns the value evaluated at a choice vector `x` with a parameter `z` that is a number. `obj` must have a method of `obj(x, z)` with `x` being a Boolean choice vector. `obj` must not restrict the specific type of `x` but only assume `x` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `x` when it is called. It should only read from `x` with `getindex`. The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`. `zbounds` determines the range of the parameter `z`, which could be `(-Inf, Inf)` if `z` can be any real number.
 
-`equal_obj` is a user-specified function that returns the cutoff point `z0`
-such that for a given pair of input choices `x1` and `x2`,
-`obj(x1, z0)` equals to `obj(x2, z0)` with `zl <= z0 <= zr`.
-It can be defined with one of the two alternative methods:
-- `equal_obj((x1, x2), zl, zr))` where the pair of input choices is
-accepted as a tuple.
+`equal_obj` is a user-specified function that returns the cutoff point `z0` such that for a given pair of input choices `x1` and `x2`, `obj(x1, z0)` equals to `obj(x2, z0)` with `zl <= z0 <= zr`. It can be defined with one of the two alternative methods: - `equal_obj((x1, x2), zl, zr))` where the pair of input choices is accepted as a tuple.
 - `equal_obj(obj1::Objective, obj2::Objective, zl, zr)` where `obj1` and `obj2`
 are the same objective function attached with different input vectors
 `obj1.x` and `obj2.x` that correspond to `x1` and `x2` respectively.
