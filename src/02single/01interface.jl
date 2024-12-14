@@ -6,7 +6,7 @@ function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.s
 	return cdcp
 end
 
-function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, trace::Bool=false, valtype::Type=Float64, kwargs...)
+function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs...)
 	S = length(obj.x)
 	if obj.x isa SVector
 		x = _fillstate(SVector{S,ItemState}, undetermined)
@@ -14,17 +14,12 @@ function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, trace::Bool=fal
 		x = fill(undetermined, S)
 	end
 	A = typeof(x)
-	tr = trace ? [SqueezingTrace{typeof(x),valtype}[]] : nothing
-	return Squeezing(scdca, A[], z, tr), x
+	return Squeezing(scdca, A[], z), x
 end
 
 function _reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp.solver.z)
 	cdcp.obj = _clearfcall(cdcp.obj)
 	empty!(cdcp.solver.branching)
-	if cdcp.solver.trace !== nothing
-		empty!(cdcp.solver.trace)
-		push!(eltype(cdcp.solver.trace)())
-	end
 	if cdcp.x isa SVector
 		S = length(cdcp.x)
 		cdcp.x = _fillstate(SVector{S,ItemState}, undetermined)
@@ -32,7 +27,7 @@ function _reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp
 		fill!(cdcp.x, undetermined)
 	end
 	cdcp.fx = -Inf
-	cdcp.solver = Squeezing(scdca, cdcp.solver.branching, z, cdcp.solver.trace)
+	cdcp.solver = Squeezing(scdca, cdcp.solver.branching, z)
 	return cdcp
 end
 

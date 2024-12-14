@@ -11,7 +11,7 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 	return cdcp
 end
 
-function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, trace::Bool=false, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
+function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
 	S = length(obj.x)
 	if policy0 === nothing
 		if obj.x isa SVector
@@ -24,7 +24,6 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 	else
 		policy = policy0
 	end
-	tr = trace ? [SqueezingPolicyTrace{Z}[]] : nothing
 	obj2 = deepcopy(obj)
 	# Harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...)
@@ -41,12 +40,12 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 	A = eltype(policy.xs)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	ss = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, pool, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), tr, nobranching), policy
+	return SqueezingPolicy(scdca, pool, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
 end
 
 function _reset!(cdcp::CDCProblem{<:Squeezing}, z, x)
 	cdcp.state = inprogress
-	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z, cdcp.solver.trace)
+	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
 	cdcp.x = x
 	cdcp.fx = -Inf
 	return cdcp
@@ -78,10 +77,6 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	cdcp.fx = convert(typeof(cdcp.fx), -Inf)
 	cdcp.state = inprogress
 	sol = cdcp.solver
-	if sol.trace !== nothing
-		resize!(sol.trace, 1)
-		empty!(sol.trace[1])
-	end
 	obj2 = deepcopy(cdcp.obj)
 	# Harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...)
@@ -109,7 +104,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	end
 	sol.zero_margin_call[] = 0
 	sol.equal_obj_call[] = 0
-	cdcp.solver = SqueezingPolicy(scdca, sol.pool, sol.squeezing, sol.branching, sol.lookup_zero_margin, zero_margin, sol.matcheds, sol.singlesolvers, equal_obj, obj2, sol.zero_margin_call, sol.equal_obj_call, sol.trace, sol.nobranching)
+	cdcp.solver = SqueezingPolicy(scdca, sol.pool, sol.squeezing, sol.branching, sol.lookup_zero_margin, zero_margin, sol.matcheds, sol.singlesolvers, equal_obj, obj2, sol.zero_margin_call, sol.equal_obj_call, sol.nobranching)
 	return cdcp
 end
 

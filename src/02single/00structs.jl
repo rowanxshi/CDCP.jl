@@ -11,20 +11,10 @@ Pass the type `Squeezing` as the first argument to `solve` indicates the use of 
 
 ## Keywords
 - `z=nothing`: An optional parameter passed as the second argument to `obj` when evaluating `obj`.
-- `trace::Bool=false`: An experimental feature for tracing the solver progress; behavior may be changed at any time in future updates.
 - `valtype::Type=Float64`: type of the value returned by `obj`.
 """
-struct Squeezing{A,Z,TR} <: CDCPSolver
+struct Squeezing{A,Z} <: CDCPSolver
 	scdca::Bool
 	branching::Vector{A}
 	z::Z
-	trace::TR
 end
-
-struct SqueezingTrace{V,TF}
-	k::Int
-	x0::V
-	newstate::ItemState
-	fx::TF
-end
-

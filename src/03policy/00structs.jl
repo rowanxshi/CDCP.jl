@@ -62,14 +62,6 @@ function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
 	return zm.equal_obj(obj, obj2, lb, ub)
 end
 
-struct SqueezingPolicyTrace{Z}
-	i::Int
-	z::Z
-	lb::Z
-	ub::Z
-	s::ItemState # TODO itemstate
-end
-
 """
     SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 
@@ -99,7 +91,7 @@ are the same objective function attached with different input vectors
 	`equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
 	This requirement is a breaking change from earlier implementation.
 """
-struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
+struct SqueezingPolicy{Z,A,AO,F1,F2,O,S} <: CDCPSolver
 	scdca::Bool
 	pool::Vector{IntervalChoice{Z,A}}
 	squeezing::Vector{Int}
@@ -112,6 +104,5 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
 	obj2::O
 	zero_margin_call::RefValue{Int}
 	equal_obj_call::RefValue{Int}
-	trace::TR
 	nobranching::Bool
 end

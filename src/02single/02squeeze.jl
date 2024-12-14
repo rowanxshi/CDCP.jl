@@ -37,7 +37,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 end
 
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
-	obj, scdca, z, tr = cdcp.obj, cdcp.solver.scdca, cdcp.solver.z, cdcp.solver.trace
+	obj, scdca, z = cdcp.obj, cdcp.solver.scdca, cdcp.solver.z
 	# For excluding: look at the best case
 	if scdca
 		obj = _setchoice(obj, setsub(x))
@@ -50,7 +50,6 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i
 	end
 	if exclude
 		xnew = _squeeze(x, excluded, i)
-		tr === nothing || push!(tr[end], SqueezingTrace(i, x, excluded, f0))
 		cdcp.obj = obj
 		return xnew, f0, excluded
 	end
@@ -67,14 +66,12 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i
 	end
 	if include
 		xnew = _squeeze(x, included, i)
-		tr === nothing || push!(tr[end], SqueezingTrace(i, x, included, f1))
 		cdcp.obj = obj
 		return xnew, f1, included
 	end
 
 	xnew = _setitemstate(x, aux, i)
 	fx = convert(typeof(cdcp.fx), -Inf)
-	tr === nothing || push!(tr[end], SqueezingTrace(i, x, aux, fx))
 	cdcp.obj = obj
 	return xnew, fx, aux
 end

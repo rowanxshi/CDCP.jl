@@ -1,8 +1,7 @@
 function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
-	branching, tr = cdcp.solver.branching, cdcp.solver.trace
+	branching = cdcp.solver.branching
 	while !isempty(branching)
 		x = pop!(branching)
-		tr === nothing || push!(tr, similar(tr[1], 0))
 		x, fx, state = squeeze!(cdcp, x)
 		if state == success
 			fx > cdcp.fx && (cdcp.x = x; cdcp.fx = fx)

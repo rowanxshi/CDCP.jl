@@ -75,7 +75,7 @@ function policy(C::Integer; kwargs...)
 end
 
 # D_j_obj is not used and hence ignored
-function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj=nothing, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), restart::Bool = true, ntasks=1, trace::Bool=false, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
+function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj=nothing, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), restart::Bool = true, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
 	Base.depwarn("Consider the new interface for solving the policy problem with `SqueezingPolicy`", :policy!)
 
 	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
@@ -86,7 +86,7 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
 	wzero_dj = Wrapped_Zero_D_j_Obj(zero_D_j_obj, fill(false, C))
 
-	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, trace=trace, nobranching=nobranching, singlekw=singlekw, kwargs...)
+	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, nobranching=nobranching, singlekw=singlekw, kwargs...)
 
 	pool, squeezing = cdcp.solver.pool, cdcp.solver.squeezing
 

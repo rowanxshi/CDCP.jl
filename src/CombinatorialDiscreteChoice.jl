@@ -27,7 +27,6 @@ export Objective,
        BruteForce,
 
        Squeezing,
-       SqueezingTrace,
 
        Policy,
        SqueezingPolicy
