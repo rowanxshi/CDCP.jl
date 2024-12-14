@@ -1,14 +1,14 @@
 struct IntervalChoice{Z,A<:AbstractVector{ItemState}}# <: AbstractVector{ItemState}
 	lb::Z
 	ub::Z
-	x::A # TODO: itemstates
+	itemstates::A
 end
 
 function Base.size(intervalchoice::IntervalChoice)
-	size(intervalchoice.x)
+	size(intervalchoice.itemstates)
 end
 Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, i::Int)
-	intervalchoice.x[i]
+	intervalchoice.itemstates[i]
 end
 function _lb(intervalchoice::IntervalChoice)
 	intervalchoice.lb

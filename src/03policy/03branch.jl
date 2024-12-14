@@ -23,12 +23,12 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	pool, matched = cdcp.solver.pool, cdcp.solver.matcheds[itask]
 	intervalchoice = pool[k]
 	sp = cdcp.solver.singlesolvers[itask]
-	xl = _solvesingle!(sp, intervalchoice.lb, intervalchoice.x)
-	xr = _solvesingle!(sp, intervalchoice.ub, intervalchoice.x)
+	xl = _solvesingle!(sp, intervalchoice.lb, intervalchoice.itemstates)
+	xr = _solvesingle!(sp, intervalchoice.ub, intervalchoice.itemstates)
 	if xl == xr
 		pool[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, xl)
 	else
-		search!(sp, matched, intervalchoice.lb, xl, intervalchoice.ub, xr, intervalchoice.x, cdcp.solver.obj2, cdcp.solver.equal_obj)
+		search!(sp, matched, intervalchoice.lb, xl, intervalchoice.ub, xr, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
 		# Overwrite the old interval with aux
 		pool[k] = pop!(matched)
 	end
@@ -101,13 +101,13 @@ function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
 	xs = resize!(cdcp.x.xs, 1)
 	cutoffs[1] = pool[1].lb
-	xs[1] = xlast = pool[1].x
+	xs[1] = itemstates_last = pool[1].itemstates
 	for intervalchoice in pool
 		# Filter out potential singletons
-		if intervalchoice.lb < intervalchoice.ub && intervalchoice.x != xlast
+		if intervalchoice.lb < intervalchoice.ub && intervalchoice.itemstates != itemstates_last
 			push!(cutoffs, intervalchoice.lb)
-			push!(xs, intervalchoice.x)
-			xlast = intervalchoice.x
+			push!(xs, intervalchoice.itemstates)
+			itemstates_last = intervalchoice.itemstates
 		end
 	end
 	return success

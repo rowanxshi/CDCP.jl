@@ -98,8 +98,7 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 			resize!(pool, length(working))
 			resize!(squeezing, length(working))
 			for (i, v) in enumerate(working)
-				pool[i] = IntervalChoice(v.l, v.r,
-					_parse_triplet(pool[1].x, v.sub, v.sup, v.aux))
+				pool[i] = IntervalChoice(v.l, v.r, _parse_triplet(pool[1].itemstates, v.sub, v.sup, v.aux))
 				squeezing[i] = i
 			end
 			_initialized = true
