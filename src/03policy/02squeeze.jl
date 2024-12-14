@@ -1,18 +1,19 @@
-function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy}) pool, squeezing, branching = cdcp.solver.pool, cdcp.solver.squeezing, cdcp.solver.branching
+function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
+	solver, squeezing, branching = cdcp.solver, cdcp.solver.squeezing, cdcp.solver.branching
 	while !isempty(squeezing)
 		k = pop!(squeezing)
-		intervalchoice = pool[k]
+		intervalchoice = solver.intervalchoices[k]
 		i = findfirst(==(undetermined), intervalchoice.itemstates)
 		if i === nothing
 			findfirst(==(aux), intervalchoice.itemstates) === nothing || push!(branching, k)
 		else
 			cdcp.obj.fcall < cdcp.maxfcall || return maxfcall_reached
 			intervalchoices = squeeze!(cdcp, intervalchoice, i)
-			pool[k] = intervalchoices[1]
+			solver.intervalchoices[k] = intervalchoices[1]
 			push!(squeezing, k)
 			for j in 2:length(intervalchoices)
-				push!(pool, intervalchoices[j])
-				push!(squeezing, length(pool))
+				push!(solver.intervalchoices, intervalchoices[j])
+				push!(squeezing, length(solver.intervalchoices))
 			end
 		end
 	end

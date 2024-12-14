@@ -88,17 +88,17 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 
 	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, nobranching=nobranching, singlekw=singlekw, kwargs...)
 
-	pool, squeezing = cdcp.solver.pool, cdcp.solver.squeezing
+	intervalchoices, squeezing = cdcp.solver.intervalchoices, cdcp.solver.squeezing
 
 	# Handle initial choices passed via (cutoffs, policies)
 	_initialized = false
 	if containers !== nothing
 		working, converged, done = containers
 		if !isempty(working)
-			resize!(pool, length(working))
+			resize!(intervalchoices, length(working))
 			resize!(squeezing, length(working))
 			for (i, v) in enumerate(working)
-				pool[i] = IntervalChoice(v.l, v.r, _parse_triplet(pool[1].itemstates, v.sub, v.sup, v.aux))
+				intervalchoices[i] = IntervalChoice(v.l, v.r, _parse_triplet(intervalchoices[1].itemstates, v.sub, v.sup, v.aux))
 				squeezing[i] = i
 			end
 			_initialized = true
@@ -109,10 +109,10 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 	if cutoffspolicies !== nothing
 		if !_initialized
 			cutoffs, policies = cutoffspolicies
-			resize!(pool, length(policies))
+			resize!(intervalchoices, length(policies))
 			resize!(squeezing, length(policies))
 			for i in 1:length(policies)
-				pool[i] = IntervalChoice(cutoffs[i], cutoffs[i+1], policies[i])
+				intervalchoices[i] = IntervalChoice(cutoffs[i], cutoffs[i+1], policies[i])
 				squeezing[i] = i
 			end
 		end  

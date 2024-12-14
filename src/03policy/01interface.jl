@@ -36,11 +36,11 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	pool = [policy[i] for i in eachindex(policy.xs)]
+	intervalchoices = [policy[i] for i in eachindex(policy.xs)]
 	A = eltype(policy.xs)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	ss = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, pool, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
+	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
 end
 
 function _reset!(cdcp::CDCProblem{<:Squeezing}, z, x)
@@ -89,8 +89,8 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	resize!(solver.pool, 1)
-	solver.pool[1] = cdcp.x[1]
+	resize!(solver.intervalchoices, 1)
+	solver.intervalchoices[1] = cdcp.x[1]
 	resize!(solver.squeezing, 1)
 	solver.squeezing[1] = 1
 	empty!(solver.branching)
@@ -104,7 +104,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	end
 	solver.zero_margin_call[] = 0
 	solver.equal_obj_call[] = 0
-	cdcp.solver = SqueezingPolicy(scdca, solver.pool, solver.squeezing, solver.branching, solver.lookup_zero_margin, zero_margin, solver.matcheds, solver.singlesolvers, equal_obj, obj2, solver.zero_margin_call, solver.equal_obj_call, solver.nobranching)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, solver.lookup_zero_margin, zero_margin, solver.matcheds, solver.singlesolvers, equal_obj, obj2, solver.zero_margin_call, solver.equal_obj_call, solver.nobranching)
 	return cdcp
 end
 

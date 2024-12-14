@@ -1,5 +1,5 @@
 function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
-	pool, branching, matcheds = cdcp.solver.pool, cdcp.solver.branching, cdcp.solver.matcheds
+	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching, cdcp.solver.matcheds
 	ntasks = length(matcheds)
 	for m in matcheds
 		empty!(m) # Just to be safe
@@ -15,22 +15,22 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
 			end
 		end
 	end
-	append!(pool, matcheds...)
+	append!(intervalchoices, matcheds...)
 	return inprogress
 end
 
 function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
-	pool, matched = cdcp.solver.pool, cdcp.solver.matcheds[itask]
-	intervalchoice = pool[k]
+	intervalchoices, matched = cdcp.solver.intervalchoices, cdcp.solver.matcheds[itask]
+	intervalchoice = intervalchoices[k]
 	sp = cdcp.solver.singlesolvers[itask]
 	xl = _solvesingle!(sp, intervalchoice.lb, intervalchoice.itemstates)
 	xr = _solvesingle!(sp, intervalchoice.ub, intervalchoice.itemstates)
 	if xl == xr
-		pool[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, xl)
+		intervalchoices[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, xl)
 	else
 		search!(sp, matched, intervalchoice.lb, xl, intervalchoice.ub, xr, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
 		# Overwrite the old interval with aux
-		pool[k] = pop!(matched)
+		intervalchoices[k] = pop!(matched)
 	end
 end
 
@@ -96,13 +96,13 @@ function setx0scdcb(x0::SVector{S,ItemState}, xl::SVector{S,ItemState}) where S
 end
 
 function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
-	pool = cdcp.solver.pool
-	sort!(pool, by=_lb)
+	intervalchoices = cdcp.solver.intervalchoices
+	sort!(intervalchoices, by=_lb)
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
 	xs = resize!(cdcp.x.xs, 1)
-	cutoffs[1] = pool[1].lb
-	xs[1] = itemstates_last = pool[1].itemstates
-	for intervalchoice in pool
+	cutoffs[1] = intervalchoices[1].lb
+	xs[1] = itemstates_last = intervalchoices[1].itemstates
+	for intervalchoice in intervalchoices
 		# Filter out potential singletons
 		if intervalchoice.lb < intervalchoice.ub && intervalchoice.itemstates != itemstates_last
 			push!(cutoffs, intervalchoice.lb)

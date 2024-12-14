@@ -93,7 +93,7 @@ are the same objective function attached with different input vectors
 """
 struct SqueezingPolicy{Z,A,AO,F1,F2,O,S} <: CDCPSolver
 	scdca::Bool
-	pool::Vector{IntervalChoice{Z,A}}
+	intervalchoices::Vector{IntervalChoice{Z,A}}
 	squeezing::Vector{Int}
 	branching::Vector{Int}
 	lookup_zero_margin::Dict{Tuple{Int,AO},Z}
