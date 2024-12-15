@@ -27,12 +27,12 @@ function Objective(f, ℒ)
 	Objective(f, ℒ, 0)
 end
 
-function _setx(obj::Objective{<:Any,<:SVector}, v, i)
+function _setℒ(obj::Objective{<:Any,<:SVector}, v, i)
 	Objective(obj.f, setindex(obj.ℒ, v, i), obj.fcall)
 end
 
 # Fallback method assumes ℒ is mutable
-function _setx(obj::Objective, v, i)
+function _setℒ(obj::Objective, v, i)
 	Objective(obj.f, setindex!(obj.ℒ, v, i), obj.fcall)
 end
 
@@ -69,9 +69,9 @@ when the `i`th item is included or not.
 This corresponds to the `D_j` function in earlier implementation.
 """
 function margin(obj::Objective, i::Int, z)
-	obj = _setx(obj, true, i)
+	obj = _setℒ(obj, true, i)
 	f1, obj = value(obj, z)
-	obj = _setx(obj, false, i)
+	obj = _setℒ(obj, false, i)
 	f0, obj = value(obj, z)
 	return f1, f0, obj
 end

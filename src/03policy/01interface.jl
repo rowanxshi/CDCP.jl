@@ -108,11 +108,11 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	return cdcp
 end
 
-function _copyx(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
+function _copyℒ(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
 	Objective(obj.f, ℒ, obj.fcall)
 end
 
 # Fallback method assumes A is a mutable array
-function _copyx(obj::Objective{<:Any, A}, ℒ::A) where A
+function _copyℒ(obj::Objective{<:Any, A}, ℒ::A) where A
 	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
 end

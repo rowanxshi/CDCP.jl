@@ -57,8 +57,8 @@ end
 
 function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
 	# the order of true and false matters in case there is no interior solution
-	obj = _setx(obj, true, i)
-	obj2 = _setx(_copyx(zm.obj2, obj.ℒ), false, i)
+	obj = _setℒ(obj, true, i)
+	obj2 = _setℒ(_copyℒ(zm.obj2, obj.ℒ), false, i)
 	return zm.equal_obj(obj, obj2, lb, ub)
 end
 
