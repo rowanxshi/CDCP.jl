@@ -1,13 +1,13 @@
 """
     solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}; kwargs...)
 	solve(Squeezing, obj, scdca::Bool; kwargs...)
-	solve(BruteForce, obj; kwargs...)
+	solve(Naive, obj; kwargs...)
 
 Solve a combinatorial discrete choice problem with a given solution algorithm
-that can be [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`BruteForce`](@ref).
+that can be [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref).
 Results are returned as a [`CDCProblem`](@ref).
 For details on usage,
-see [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`BruteForce`](@ref) respectively.
+see [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref) respectively.
 An in-place version [`solve!`](@ref) can be used when a `CDCProblem` is preallocated.
 """
 function solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver

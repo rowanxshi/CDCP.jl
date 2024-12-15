@@ -1,24 +1,24 @@
 """
     naive(C::Integer; obj)
 
-Solve a combinatorial discrete choice problem over `C` choices with simple brute force. (Generally used for testing or time-trial exercises.) The solver an objective function `π(J)`.
+Solve a combinatorial discrete choice problem over `C` choices with exhaustion. (Generally used for testing or time-trial exercises.) The solver an objective function `π(J)`.
 
 See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
 
 !!! warning
 
 	This method exists only for the sake of backward compatibility.
-	Future use should prefer the interface based on `solve(BruteForce, ...)`.
+	Future use should prefer the interface based on `solve(Naive, ...)`.
 """
 function naive(C::Integer; obj, z=nothing)
 	naive!(falses(C); obj, z)
 end
 
 function naive!(J::AbstractVector{Bool}; obj, z=nothing)
-	Base.depwarn("Consider the new interface for solving the brute-force problem with `BruteForce`", :naive!)
+	Base.depwarn("Consider the new interface for solution with exhaustion using the problem with `Naive`", :naive!)
 	C = length(J)
 	wobj = Objective(obj, copy(J))
-	cdcp = solve(BruteForce, wobj, C; z=z)
+	cdcp = solve(Naive, wobj, C; z=z)
 	copyto!(J, cdcp.x)
 end
 

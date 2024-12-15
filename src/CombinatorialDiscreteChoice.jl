@@ -23,7 +23,7 @@ export Objective,
        excluded,
        aux,
 
-       BruteForce,
+       Naive,
 
        Squeezing,
 

@@ -1,4 +1,4 @@
-function solve!(cdcp::CDCProblem{<:BruteForce}; restart::Bool=true)
+function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
 	obj, ids, z = cdcp.obj, cdcp.solver.ids, cdcp.solver.z
 	restart && (resize!(ids, 1); ids[1] = 0)
 	S = length(cdcp.x)
