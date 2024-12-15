@@ -1,9 +1,9 @@
 function zero_margin(obj::Objective{TestObj}, i, lb, ub)
     δ, S, val = obj.f.δ, obj.f.S, obj.f.val
     f = range(0.1, length=S, step=0.1)
-    x1 = setindex(obj.x, true, i)
-    x0 = setindex(obj.x, false, i)
-    z = f[i] / (sum(i->x1[i]*val[i], 1:S)^δ - sum(i->x0[i]*val[i], 1:S)^δ)
+    ℒ1 = setindex(obj.ℒ, true, i)
+    ℒ0 = setindex(obj.ℒ, false, i)
+    z = f[i] / (sum(i->ℒ1[i]*val[i], 1:S)^δ - sum(i->ℒ0[i]*val[i], 1:S)^δ)
     obj = addfcall(obj, 2) # Needed for maxfcall to work
     return z, obj
 end
@@ -11,8 +11,8 @@ end
 function equal_obj(obj1::Objective{TestObj}, obj2::Objective{TestObj}, lb, ub)
     δ, S, val = obj1.f.δ, obj1.f.S, obj1.f.val
     f = range(0.1, length=S, step=0.1)
-    z = sum(i->obj1.x[i]*val[i], 1:S)^δ - sum(i->obj2.x[i]*val[i], 1:S)^δ
-    z = sum(i->(obj1.x[i]-obj2.x[i])*f[i], 1:S) / z
+    z = sum(i->obj1.ℒ[i]*val[i], 1:S)^δ - sum(i->obj2.ℒ[i]*val[i], 1:S)^δ
+    z = sum(i->(obj1.ℒ[i]-obj2.ℒ[i])*f[i], 1:S) / z
     obj1 = addfcall(obj1, 2) # Needed for maxfcall to work
     return z, obj1
 end

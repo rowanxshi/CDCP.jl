@@ -3,11 +3,11 @@ function solve!(cdcp::CDCProblem{<:BruteForce}; restart::Bool=true)
 	restart && (resize!(ids, 1); ids[1] = 0)
 	S = length(cdcp.x)
 	# The case where no item is chosen
-	fill!(obj.x, false)
+	fill!(obj.ℒ, false)
 	val, obj = value(obj, z)
 	if val > cdcp.fx
 		cdcp.fx = val
-		cdcp.x .= obj.x
+		cdcp.x .= obj.ℒ
 	end
 	# If restart = false, continue from the first combination of the same length as ids
 	n1 = length(ids)
@@ -25,7 +25,7 @@ function solve!(cdcp::CDCProblem{<:BruteForce}; restart::Bool=true)
 			val, obj = value(obj, z)
 			if val > cdcp.fx
 				cdcp.fx = val
-				cdcp.x .= obj.x
+				cdcp.x .= obj.ℒ
 			end
 			next = iterate(C, ids)
 		end

@@ -24,7 +24,7 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalC
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
 	lookup = cdcp.solver.lookup_zero_margin
 	obj = _setchoice(obj, scdca ? setsup(intervalchoice.itemstates) : setsub(intervalchoice.itemstates))
-	key = (i, obj.x)
+	key = (i, obj.ℒ)
 	z = get(lookup, key, nothing)
 	if z === nothing
 		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.lb, intervalchoice.ub)
@@ -49,7 +49,7 @@ function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
 	lookup = cdcp.solver.lookup_zero_margin
 	obj = _setchoice(obj, scdca ? setsub(intervalchoice.itemstates) : setsup(intervalchoice.itemstates))
-	key = (i, obj.x)
+	key = (i, obj.ℒ)
 	z = get(lookup, key, nothing)
 	if z === nothing
 		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.lb, intervalchoice.ub)

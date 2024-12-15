@@ -13,30 +13,27 @@ A wrapped objective function for solving a [`CDCProblem`](@ref). This facilitate
 Users are *not* required to construct `Objective` unless there is a need for fine-grained control.
 
 # Constructor
-	Objective(f, x, [z=0])
+	Objective(f, ℒ, [z=0])
 
-Construct an instance of `Objective` with objective function `f` and an input vector `x`.
-`f` must always accept `x` as the first argument
-and may additionally accept an optional argument `z` for parameter
-(e.g., productivity).
+Construct an instance of `Objective` with objective function `f` and an input vector `ℒ`. `f` must always accept `ℒ` as the first argument and may additionally accept an optional argument `z` for parameter (e.g., productivity).
 """
 struct Objective{F,A}
 	f::F
-	x::A
+	ℒ::A
 	fcall::Int
 end
 
-function Objective(f, x)
-	Objective(f, x, 0)
+function Objective(f, ℒ)
+	Objective(f, ℒ, 0)
 end
 
 function _setx(obj::Objective{<:Any,<:SVector}, v, i)
-	Objective(obj.f, setindex(obj.x, v, i), obj.fcall)
+	Objective(obj.f, setindex(obj.ℒ, v, i), obj.fcall)
 end
 
-# Fallback method assumes x is mutable
+# Fallback method assumes ℒ is mutable
 function _setx(obj::Objective, v, i)
-	Objective(obj.f, setindex!(obj.x, v, i), obj.fcall)
+	Objective(obj.f, setindex!(obj.ℒ, v, i), obj.fcall)
 end
 
 """
@@ -45,10 +42,10 @@ end
 Add `n` to the counter for function call for `obj`.
 """
 function addfcall(obj::Objective, n=1)
-	Objective(obj.f, obj.x, obj.fcall+n)
+	Objective(obj.f, obj.ℒ, obj.fcall+n)
 end
 function _clearfcall(obj::Objective)
-	Objective(obj.f, obj.x, 0)
+	Objective(obj.f, obj.ℒ, 0)
 end
 
 """
@@ -58,10 +55,10 @@ Evaluate `obj` with parameter `z`.
 The parameter is ignored if `z` is `nothing`.
 """
 function value(obj::Objective, z)
-	obj.f(obj.x, z), addfcall(obj)
+	obj.f(obj.ℒ, z), addfcall(obj)
 end
 function value(obj::Objective, ::Nothing)
-	obj.f(obj.x), addfcall(obj)
+	obj.f(obj.ℒ), addfcall(obj)
 end
 
 """

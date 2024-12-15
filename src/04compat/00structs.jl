@@ -4,7 +4,7 @@ end
 
 function (w::Wrapped_Equalise_Obj)(obj1, obj2, l, r)
 	obj1 = addfcall(obj1, 2)
-	return w.f((obj1.x, obj2.x), l, r), obj1
+	return w.f((obj1.ℒ, obj2.ℒ), l, r), obj1
 end
 
 struct Wrapped_Zero_D_j_Obj{F}
@@ -13,7 +13,7 @@ struct Wrapped_Zero_D_j_Obj{F}
 end
 
 function (w::Wrapped_Zero_D_j_Obj)(obj, i, lb, ub)
-	copyto!(w.J, obj.x)
+	copyto!(w.J, obj.ℒ)
 	z = w.f(i, w.J, lb, ub)
 	obj = addfcall(obj, 1)
 	return z, obj

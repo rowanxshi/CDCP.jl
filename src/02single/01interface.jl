@@ -7,14 +7,14 @@ function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.s
 end
 
 function _init(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs...)
-	S = length(obj.x)
-	if obj.x isa SVector
-		x = _fillstate(SVector{S,ItemState}, undetermined)
+	S = length(obj.ℒ)
+	if obj.ℒ isa SVector
+		itemstates = _fillstate(SVector{S,ItemState}, undetermined)
 	else
-		x = fill(undetermined, S)
+		itemstates = fill(undetermined, S)
 	end
-	A = typeof(x)
-	return Squeezing(scdca, A[], z), x
+	A = typeof(itemstates)
+	return Squeezing(scdca, A[], z), itemstates
 end
 
 function _reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp.solver.z)
@@ -31,32 +31,32 @@ function _reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp
 	return cdcp
 end
 
-function setsub(x::SVector{S,ItemState}) where S
+function setsub(itemstates::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(x[$i] == included))
+			push!(ex.args, :(itemstates[$i] == included))
 		end
 		return :(SVector{S,Bool}($ex))
 	else
-		return SVector{S,Bool}(ntuple(i->x[i] == included, S))
+		return SVector{S,Bool}(ntuple(i->itemstates[i] == included, S))
 	end
 end
 
-function setsup(x::SVector{S,ItemState}) where S
+function setsup(itemstates::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(x[$i] != excluded))
+			push!(ex.args, :(itemstates[$i] != excluded))
 		end
 		return :(SVector{S,Bool}($ex))
 	else
-		return SVector{S,Bool}(ntuple(i->x[i] != excluded, S))
+		return SVector{S,Bool}(ntuple(i->itemstates[i] != excluded, S))
 	end
 end
 
-function _setitemstate(x::SVector{S,ItemState}, s::ItemState, i::Int) where S
-	setindex(x, s, i)
+function _setitemstate(itemstates::SVector{S,ItemState}, s::ItemState, i::Int) where S
+	setindex(itemstates, s, i)
 end
 
 function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
@@ -71,6 +71,6 @@ function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
 	end
 end
 
-function _setchoice(obj::Objective{<:Any,A}, x::A) where A
-	Objective(obj.f, x, obj.fcall)
+function _setchoice(obj::Objective{<:Any,A}, ℒ::A) where A
+	Objective(obj.f, ℒ, obj.fcall)
 end

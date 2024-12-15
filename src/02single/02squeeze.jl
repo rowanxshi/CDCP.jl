@@ -1,17 +1,17 @@
-function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
-	S = length(x)
+function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState})
+	S = length(itemstates)
 	fx = -Inf
 	lastaux = nothing
-	i = findfirst(==(undetermined), x)
+	i = findfirst(==(undetermined), itemstates)
 	if i === nothing
-		lastaux = findfirst(==(aux), x) # May find aux from initial value
+		lastaux = findfirst(==(aux), itemstates) # May find aux from initial value
 		if lastaux === nothing # Last value set by branching
 			fx, obj = value(cdcp.obj, cdcp.solver.z)
 			cdcp.obj = obj
 		end
 	end
 	while i !== nothing && cdcp.obj.fcall < cdcp.maxfcall
-		x, fx, itemstate = squeeze!(cdcp, x, i)
+		itemstates, fx, itemstate = squeeze!(cdcp, itemstates, i)
 		if itemstate == aux
 			lastaux = lastaux === nothing ? i : min(lastaux, i)
 		else
@@ -19,84 +19,84 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState})
 		end
 		#lastaux = ifelse(itemstate == aux, i, nothing)
 		if i < S
-			i = findnext(==(undetermined), x, i+1)
-			i === nothing && (i = findfirst(==(undetermined), x))
+			i = findnext(==(undetermined), itemstates, i+1)
+			i === nothing && (i = findfirst(==(undetermined), itemstates))
 		else
-			i = findfirst(==(undetermined), x)
+			i = findfirst(==(undetermined), itemstates)
 		end
 	end
 	# Whenever squeeze! makes progress, any aux is changed to undetermined
-	# If aux is in x, it can only be that lastaux !== nothing
+	# If aux is in itemstates, it can only be that lastaux !== nothing
 	if lastaux === nothing
 		state = cdcp.obj.fcall < cdcp.maxfcall ? success : maxfcall_reached
 	else
-		push!(cdcp.solver.branching, branch(x, lastaux)...)
+		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
 		state = inprogress
 	end
-	return x, fx, state
+	return itemstates, fx, state
 end
 
-function squeeze!(cdcp::CDCProblem{<:Squeezing}, x::AbstractVector{ItemState}, i::Int)
+function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
 	obj, scdca, z = cdcp.obj, cdcp.solver.scdca, cdcp.solver.z
 	# For excluding: look at the best case
 	if scdca
-		obj = _setchoice(obj, setsub(x))
+		obj = _setchoice(obj, setsub(itemstates))
 		f1, f0, obj = margin(obj, i, z)
 		exclude = f1 - f0 <= 0
 	else
-		obj = _setchoice(obj, setsup(x))
+		obj = _setchoice(obj, setsup(itemstates))
 		f1, f0, obj = margin(obj, i, z)
 		exclude = f1 - f0 < 0
 	end
 	if exclude
-		xnew = _squeeze(x, excluded, i)
+		itemstates_new = _squeeze(itemstates, excluded, i)
 		cdcp.obj = obj
-		return xnew, f0, excluded
+		return itemstates_new, f0, excluded
 	end
 
 	# For including: look at the worst case
 	if scdca
-		obj = _setchoice(obj, setsup(x))
+		obj = _setchoice(obj, setsup(itemstates))
 		f1, f0, obj = margin(obj, i, z)
 		include = f1 - f0 > 0
 	else
-		obj = _setchoice(obj, setsub(x))
+		obj = _setchoice(obj, setsub(itemstates))
 		f1, f0, obj = margin(obj, i, z)
 		include = f1 - f0 >= 0
 	end
 	if include
-		xnew = _squeeze(x, included, i)
+		itemstates_new = _squeeze(itemstates, included, i)
 		cdcp.obj = obj
-		return xnew, f1, included
+		return itemstates_new, f1, included
 	end
 
-	xnew = _setitemstate(x, aux, i)
+	itemstates_new = _setitemstate(itemstates, aux, i)
 	fx = convert(typeof(cdcp.fx), -Inf)
 	cdcp.obj = obj
-	return xnew, fx, aux
+	return itemstates_new, fx, aux
 end
 
-function _squeeze(x::SVector{S,ItemState}, s::ItemState, k::Int) where S
+function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(_squeeze(x, s, k, $i)))
+			push!(ex.args, :(_squeeze(itemstates, s, k, $i)))
 		end
 		return :(SVector{S,ItemState}($ex))
 	else
-		return SVector{S,ItemState}(ntuple(i->_squeeze(x, s, k, i), S))
+		return SVector{S,ItemState}(ntuple(i->_squeeze(itemstates, s, k, i), S))
 	end
 end
 
-function _squeeze(x::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
+function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
 	if i == k
 		return s
 	else
-		@inbounds xi = x[i]
-		if xi == aux
+		@inbounds itemstatesi = itemstates[i]
+		if itemstatesi == aux
 			return undetermined
 		else
-			return xi
+			return itemstatesi
 		end
 	end
 end

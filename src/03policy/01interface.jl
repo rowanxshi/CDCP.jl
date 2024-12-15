@@ -12,9 +12,9 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 end
 
 function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
-	S = length(obj.x)
+	S = length(obj.ℒ)
 	if policy0 === nothing
-		if obj.x isa SVector
+		if obj.ℒ isa SVector
 			allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
 			policy = Policy([zbounds[1]], [allundetermined], zbounds[2])
 		else
@@ -40,7 +40,7 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 	A = eltype(policy.xs)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	ss = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.x)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
+	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
 end
 
 function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
@@ -61,7 +61,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	end
 	zmin = cdcp.x.cutoffs[1]
 	zbounds = (zmin, cdcp.x.ub)
-	if cdcp.obj.x isa SVector
+	if cdcp.obj.ℒ isa SVector
 		allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
 		resize!(cdcp.x.cutoffs, 1)
 		cdcp.x.cutoffs[1] = zmin
@@ -108,11 +108,11 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	return cdcp
 end
 
-function _copyx(obj::Objective{<:Any, A}, x::A) where A<:SVector
-	Objective(obj.f, x, obj.fcall)
+function _copyx(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
+	Objective(obj.f, ℒ, obj.fcall)
 end
 
 # Fallback method assumes A is a mutable array
-function _copyx(obj::Objective{<:Any, A}, x::A) where A
-	Objective(obj.f, copyto!(obj.x, x), obj.fcall)
+function _copyx(obj::Objective{<:Any, A}, ℒ::A) where A
+	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
 end

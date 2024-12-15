@@ -19,7 +19,7 @@ function init(::Type{M}, obj, S::Integer, args...; maxfcall::Integer=1_000_000_0
 	S > 0 || throw(ArgumentError("the number of items S must be a positive integer"))
 	if obj isa Objective
 		obj = _clearfcall(obj)
-		length(obj.x) == S || throw(ArgumentError("length of obj.x is not $S"))
+		length(obj.ℒ) == S || throw(ArgumentError("length of obj.ℒ is not $S"))
 	else
 		obj = Objective(obj, S < _static_threshold() ?
 			SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))

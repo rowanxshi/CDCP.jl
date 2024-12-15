@@ -27,32 +27,32 @@ function _parse_state(sub::Bool, sup::Bool, isaux::Bool)
 	end
 end
 
-function _parse_triplet(x::SVector{S,ItemState}, sub, sup, aux) where S
+function _parse_triplet(itemstates::SVector{S,ItemState}, sub, sup, aux) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
 			push!(ex.args, :(_parse_state(
 				@inbounds(sub[$i]), @inbounds(sup[$i]), @inbounds(aux[$i]))))
 		end
-		return :(_checklength(x, sub, sup, aux); SVector{S,ItemState}($ex))
+		return :(_checklength(itemstates, sub, sup, aux); SVector{S,ItemState}($ex))
 	else
-		_checklength(x, sub, sup, aux)
+		_checklength(itemstates, sub, sup, aux)
 		return SVector{S,ItemState}(ntuple(i->_parse_state(sub[i], sup[i], aux[i]), S))
 	end
 end
 
 function _invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool},
-		isaux::AbstractVector{Bool}, x::SVector{S,ItemState}) where S
+		isaux::AbstractVector{Bool}, itemstates::SVector{S,ItemState}) where S
 	@inbounds for i in 1:S
-		xi = x[i]
-		if xi == aux
+		itemstate = itemstates[i]
+		if itemstate == aux
 			isaux[i] = true
 		else
 			isaux[i] = false
-			if xi == undetermined
+			if itemstate == undetermined
 				sub[i] = false
 				sup[i] = true
-			elseif xi == included
+			elseif itemstate == included
 				sub[i] = true
 				sup[i] = true
 			else

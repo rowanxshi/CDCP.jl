@@ -1,22 +1,22 @@
 function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
 	branching = cdcp.solver.branching
 	while !isempty(branching)
-		x = pop!(branching)
-		x, fx, state = squeeze!(cdcp, x)
+		itemstates = pop!(branching)
+		itemstates, fx, state = squeeze!(cdcp, itemstates)
 		if state == success
-			fx > cdcp.fx && (cdcp.x = x; cdcp.fx = fx)
+			fx > cdcp.fx && (cdcp.x = itemstates; cdcp.fx = fx)
 		elseif state == maxfcall_reached
-			push!(branching, x) # Put x back
+			push!(branching, itemstates) # Put itemstates back
 			return maxfcall_reached
 		end
 	end
 	return success
 end
 
-function branch(x::AbstractVector{ItemState}, k::Int)
+function branch(itemstates::AbstractVector{ItemState}, k::Int)
 	# All aux are turned into undertermined
-	xin = _squeeze(x, included, k)
-	# copy is here only in case x is not SVector
-	xex = _squeeze(copy(x), excluded, k)
-	return xin, xex
+	itemstates_in = _squeeze(itemstates, included, k)
+	# copy is here only in case itemstates is not SVector
+	itemstates_ex = _squeeze(copy(itemstates), excluded, k)
+	return itemstates_in, itemstates_ex
 end
