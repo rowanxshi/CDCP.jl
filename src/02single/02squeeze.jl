@@ -1,17 +1,17 @@
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState})
 	S = length(itemstates)
-	fx = -Inf
+	value = -Inf
 	lastaux = nothing
 	i = findfirst(==(undetermined), itemstates)
 	if i === nothing
 		lastaux = findfirst(==(aux), itemstates) # May find aux from initial value
 		if lastaux === nothing # Last value set by branching
-			fx, obj = value(cdcp.obj, cdcp.solver.z)
+			value, obj = cdcp.obj(cdcp.solver.z)
 			cdcp.obj = obj
 		end
 	end
 	while i !== nothing && cdcp.obj.fcall < cdcp.maxfcall
-		itemstates, fx, itemstate = squeeze!(cdcp, itemstates, i)
+		itemstates, value, itemstate = squeeze!(cdcp, itemstates, i)
 		if itemstate == aux
 			lastaux = lastaux === nothing ? i : min(lastaux, i)
 		else
@@ -33,7 +33,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
 		state = inprogress
 	end
-	return itemstates, fx, state
+	return itemstates, value, state
 end
 
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
@@ -71,9 +71,9 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 	end
 
 	itemstates_new = _setitemstate(itemstates, aux, i)
-	fx = convert(typeof(cdcp.fx), -Inf)
+	value = convert(typeof(cdcp.value), -Inf)
 	cdcp.obj = obj
-	return itemstates_new, fx, aux
+	return itemstates_new, value, aux
 end
 
 function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S

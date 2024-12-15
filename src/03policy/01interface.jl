@@ -47,7 +47,7 @@ function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
 	cdcp.state = inprogress
 	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
 	cdcp.x = itemstates
-	cdcp.fx = -Inf
+	cdcp.value = -Inf
 	return cdcp
 end
 
@@ -74,7 +74,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		resize!(cdcp.x.xs, 1)
 		cdcp.x.xs[1] = allundetermined
 	end
-	cdcp.fx = convert(typeof(cdcp.fx), -Inf)
+	cdcp.value = convert(typeof(cdcp.value), -Inf)
 	cdcp.state = inprogress
 	solver = cdcp.solver
 	obj2 = deepcopy(cdcp.obj)

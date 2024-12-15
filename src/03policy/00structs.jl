@@ -34,8 +34,8 @@ end
 
 function (d::DiffObj)(z, fcall)
 	# ℒ should have been set
-	f1, obj1 = value(d.obj1, z)
-	f2, obj2 = value(d.obj2, z)
+	f1, obj1 = d.obj1(z)
+	f2, obj2 = d.obj2(z)
 	fcall[] += 2
 	return f2 - f1
 end

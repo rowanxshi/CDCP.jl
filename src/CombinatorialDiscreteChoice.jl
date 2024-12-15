@@ -14,7 +14,6 @@ export init, solve!, solve
 
 export Objective,
        addfcall,
-       value,
        margin,
        CDCProblem,
        SolverState,

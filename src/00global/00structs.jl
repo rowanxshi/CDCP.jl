@@ -48,16 +48,10 @@ function _clearfcall(obj::Objective)
 	Objective(obj.f, obj.ℒ, 0)
 end
 
-"""
-    value(obj::Objective, z)
-
-Evaluate `obj` with parameter `z`.
-The parameter is ignored if `z` is `nothing`.
-"""
-function value(obj::Objective, z)
+function (obj::Objective)(z)
 	obj.f(obj.ℒ, z), addfcall(obj)
 end
-function value(obj::Objective, ::Nothing)
+function (obj::Objective)(::Nothing)
 	obj.f(obj.ℒ), addfcall(obj)
 end
 
@@ -70,9 +64,9 @@ This corresponds to the `D_j` function in earlier implementation.
 """
 function margin(obj::Objective, i::Int, z)
 	obj = _setℒ(obj, true, i)
-	f1, obj = value(obj, z)
+	f1, obj = obj(z)
 	obj = _setℒ(obj, false, i)
-	f0, obj = value(obj, z)
+	f0, obj = obj(z)
 	return f1, f0, obj
 end
 
@@ -90,16 +84,16 @@ end
 end
 
 """
-    CDCProblem{M<:CDCPSolver, O<:Objective, A, TF<:AbstractFloat}
+    CDCProblem{M<:CDCPSolver, O<:Objective, A, F<:AbstractFloat}
 
 Results from solving a combinatorial discrete choice problem.
 When a solution is attained, it can be retrived from the field `x`.
 """
-mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, A, TF<:AbstractFloat}
+mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, A, F<:AbstractFloat}
 	solver::M
 	obj::O
 	x::A
-	fx::TF
+	value::F
 	maxfcall::Int
 	state::SolverState
 end

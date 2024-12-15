@@ -2,9 +2,9 @@ function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
 	branching = cdcp.solver.branching
 	while !isempty(branching)
 		itemstates = pop!(branching)
-		itemstates, fx, state = squeeze!(cdcp, itemstates)
+		itemstates, value, state = squeeze!(cdcp, itemstates)
 		if state == success
-			fx > cdcp.fx && (cdcp.x = itemstates; cdcp.fx = fx)
+			value > cdcp.value && (cdcp.x = itemstates; cdcp.value = value)
 		elseif state == maxfcall_reached
 			push!(branching, itemstates) # Put itemstates back
 			return maxfcall_reached
