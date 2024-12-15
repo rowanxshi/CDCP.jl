@@ -36,11 +36,11 @@ function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	intervalchoices = [policy[i] for i in eachindex(policy.xs)]
-	A = eltype(policy.xs)
+	intervalchoices = [policy[i] for i in eachindex(policy.itemstates_s)]
+	A = eltype(policy.itemstates_s)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	ss = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.xs)), Int[], Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
+	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.itemstates_s)), Int[], Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), zero_margin, matcheds, ss, equal_obj, obj2, Ref(0), Ref(0), nobranching), policy
 end
 
 function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
@@ -52,7 +52,7 @@ function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
 end
 
 function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
-	S = length(cdcp.x.xs[1])
+	S = length(cdcp.x.itemstates_s[1])
 	if obj isa Objective
 		cdcp.obj = _clearfcall(obj)
 	else
@@ -65,14 +65,14 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
 		resize!(cdcp.x.cutoffs, 1)
 		cdcp.x.cutoffs[1] = zmin
-		resize!(cdcp.x.xs, 1)
-		cdcp.x.xs[1] = allundetermined
+		resize!(cdcp.x.itemstates_s, 1)
+		cdcp.x.itemstates_s[1] = allundetermined
 	else
 		allundetermined = fill(undetermined, S)
 		resize!(cdcp.x.cutoffs, 1)
 		cdcp.x.cutoffs[1] = zmin
-		resize!(cdcp.x.xs, 1)
-		cdcp.x.xs[1] = allundetermined
+		resize!(cdcp.x.itemstates_s, 1)
+		cdcp.x.itemstates_s[1] = allundetermined
 	end
 	cdcp.value = convert(typeof(cdcp.value), -Inf)
 	cdcp.state = inprogress

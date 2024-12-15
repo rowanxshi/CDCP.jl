@@ -16,15 +16,15 @@ end
 
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	cutoffs::Vector{Z}
-	xs::Vector{A}
+	itemstates_s::Vector{A}
 	ub::Z
 end
 
 function Base.size(policy::Policy)
-	size(policy.xs)
+	size(policy.itemstates_s)
 end
 Base.@propagate_inbounds function Base.getindex(policy::Policy, i::Int)
-	IntervalChoice(policy.cutoffs[i], i+1>length(policy.xs) ? policy.ub : policy.cutoffs[i+1], policy.xs[i])
+	IntervalChoice(policy.cutoffs[i], i+1>length(policy.itemstates_s) ? policy.ub : policy.cutoffs[i+1], policy.itemstates_s[i])
 end
 
 struct DiffObj{Obj}

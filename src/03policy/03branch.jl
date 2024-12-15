@@ -99,14 +99,14 @@ function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
 	intervalchoices = cdcp.solver.intervalchoices
 	sort!(intervalchoices, by=_lb)
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
-	xs = resize!(cdcp.x.xs, 1)
+	itemstates_s = resize!(cdcp.x.itemstates_s, 1)
 	cutoffs[1] = intervalchoices[1].lb
-	xs[1] = itemstates_last = intervalchoices[1].itemstates
+	itemstates_s[1] = itemstates_last = intervalchoices[1].itemstates
 	for intervalchoice in intervalchoices
 		# Filter out potential singletons
 		if intervalchoice.lb < intervalchoice.ub && intervalchoice.itemstates != itemstates_last
 			push!(cutoffs, intervalchoice.lb)
-			push!(xs, intervalchoice.itemstates)
+			push!(itemstates_s, intervalchoice.itemstates)
 			itemstates_last = intervalchoice.itemstates
 		end
 	end
