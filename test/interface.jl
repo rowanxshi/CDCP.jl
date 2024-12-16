@@ -14,13 +14,13 @@ end
     f = TestObj(0.25, 10, rand(10))
     obj = Objective(f, trues(10))
     @test obj.fcall == 0
-    v, obj = value(obj, nothing)
+    v, obj = obj(nothing)
     @test v == f(trues(10))
     @test obj.fcall == 1
 
     obj = _clearfcall(obj)
     @test obj.fcall == 0
-    v, obj = value(obj, 2)
+    v, obj = obj(2)
     @test v == f(trues(10), 2)
 
     f1, f0, obj = margin(obj, 2, nothing)
