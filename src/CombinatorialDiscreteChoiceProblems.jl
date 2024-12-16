@@ -2,7 +2,7 @@
 Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (2023).
 See [here](https://github.com/rowanxshi/CDCP.jl) for more.
 """
-module CombinatorialDiscreteChoice
+module CombinatorialDiscreteChoiceProblems
 
 using Base: RefValue
 using StaticArrays: SVector, setindex
