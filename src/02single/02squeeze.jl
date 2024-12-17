@@ -12,7 +12,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 		end
 	end
 
-	while !isnothing(i) && (cdcp.obj.fcall < cdcp.maxfcall)
+	while !isnothing(i)
 		itemstates, value, itemstate = squeeze!(cdcp, itemstates, i)
 		if itemstate == aux
 			lastaux = isnothing(lastaux) ? i : min(lastaux, i)
@@ -31,12 +31,12 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 	# whenever squeeze! makes progress, any aux is changed to undetermined
 	# if aux is in itemstates, it can only be that lastaux !== nothing
 	if isnothing(lastaux)
-		state = cdcp.obj.fcall < cdcp.maxfcall ? success : maxfcall_reached
+		cdcpstate = success
 	else
 		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
-		state = inprogress
+		cdcpstate = inprogress
 	end
-	return itemstates, value, state
+	return itemstates, value, cdcpstate
 end
 
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)

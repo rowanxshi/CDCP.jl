@@ -1,7 +1,7 @@
 function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.solver.scdca, z=cdcp.solver.z)
 	restart && (cdcp = _reinit!(cdcp; scdca, z))
 	cdcp.x, cdcp.value, cdcp.state = squeeze!(cdcp, cdcp.x)
-	cdcp.state == success || cdcp.state == maxfcall_reached && return cdcp
+	cdcp.state == success && return cdcp
 	cdcp.state = squeeze_branch!(cdcp)
 	return cdcp
 end

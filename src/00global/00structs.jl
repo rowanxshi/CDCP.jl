@@ -111,6 +111,5 @@ mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, A, F<:AbstractFloat}
 	obj::O
 	x::A
 	value::F
-	maxfcall::Int
 	state::SolverState
 end

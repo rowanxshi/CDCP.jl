@@ -13,10 +13,10 @@ function solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver
 	solve!(init(M, args...; kwargs...))
 end
 
-function init(::Type{M}, obj, S::Integer, args...; maxfcall::Integer=1_000_000_000, valuetype::Type=Float64, kwargs...) where M<:CDCPSolver
+function init(::Type{M}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...) where M<:CDCPSolver
 	obj = init_Objective(obj, S)
 	solver, x = init_solverx(M, obj, args...; kwargs...)
-	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), maxfcall, inprogress)
+	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
 
 function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S

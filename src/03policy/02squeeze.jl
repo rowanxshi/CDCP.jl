@@ -7,7 +7,7 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 		if i === nothing
 			findfirst(==(aux), intervalchoice.itemstates) === nothing || push!(branching, k)
 		else
-			cdcp.obj.fcall < cdcp.maxfcall || return maxfcall_reached
+			cdcp.obj.fcall < cdcp.solver.maxfcall || return maxfcall_reached
 			intervalchoices = squeeze!(cdcp, intervalchoice, i)
 			solver.intervalchoices[k] = intervalchoices[1]
 			push!(squeezing, k)

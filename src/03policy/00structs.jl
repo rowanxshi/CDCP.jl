@@ -104,4 +104,5 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,S} <: CDCPSolver
 	zero_margin_call::RefValue{Int}
 	equal_obj_call::RefValue{Int}
 	nobranching::Bool
+	maxfcall::Int
 end
