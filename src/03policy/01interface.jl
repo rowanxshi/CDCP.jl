@@ -11,7 +11,7 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 	return cdcp
 end
 
-function _init(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
+function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...) where Z
 	S = length(obj.ℒ)
 	if policy0 === nothing
 		if obj.ℒ isa SVector

@@ -4,7 +4,10 @@ function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
 		itemstates = pop!(branching)
 		itemstates, value, state = squeeze!(cdcp, itemstates)
 		if state == success
-			value > cdcp.value && (cdcp.x = itemstates; cdcp.value = value)
+			value > cdcp.value && begin
+				cdcp.x = itemstates
+				cdcp.value = value
+			end
 		elseif state == maxfcall_reached
 			push!(branching, itemstates) # Put itemstates back
 			return maxfcall_reached
