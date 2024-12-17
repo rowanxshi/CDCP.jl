@@ -3,7 +3,7 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 	while !isempty(squeezing)
 		k = pop!(squeezing)
 		intervalchoice = solver.intervalchoices[k]
-		i = findfirst(==(undetermined), intervalchoice.itemstates)
+		i = next_undetermined(intervalchoice.itemstates)
 		if i === nothing
 			findfirst(==(aux), intervalchoice.itemstates) === nothing || push!(branching, k)
 		else

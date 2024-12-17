@@ -1,17 +1,15 @@
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState})
-	S = length(itemstates)
 	value = -Inf
 	lastaux = nothing
-	i = findfirst(==(undetermined), itemstates)
 
+	i = next_undetermined(itemstates)
 	if isnothing(i)
-		lastaux = findfirst(==(aux), itemstates) # may find aux from initial value
-		if isnothing(lastaux) # last value set by branching
+		lastaux = findfirst(==(aux), itemstates)
+		if isnothing(lastaux)
 			value, obj = cdcp.obj(cdcp.solver.z)
 			cdcp.obj = obj
 		end
 	end
-
 	while !isnothing(i)
 		itemstates, value, itemstate = squeeze!(cdcp, itemstates, i)
 		if itemstate == aux
@@ -19,22 +17,14 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 		else
 			lastaux = nothing
 		end
-		if i < S
-			i = findnext(==(undetermined), itemstates, i+1)
-			isnothing(i) && (i = findfirst(==(undetermined), itemstates))
-		else
-			i = findfirst(==(undetermined), itemstates)
-		end
+		i = next_undetermined(itemstates, i)
 	end
 
-### TODO I FEEL LIKE THIS PART GOES INTO BRANCHING
-	# whenever squeeze! makes progress, any aux is changed to undetermined
-	# if aux is in itemstates, it can only be that lastaux !== nothing
 	if isnothing(lastaux)
 		cdcpstate = success
 	else
-		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
 		cdcpstate = inprogress
+		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
 	end
 	return itemstates, value, cdcpstate
 end
