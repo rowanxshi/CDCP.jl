@@ -65,7 +65,7 @@ function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 		return (intervalchoice, )
 	else
 		intervalchoice_left = IntervalChoice(intervalchoice.lb, z, _squeeze(intervalchoice.itemstates, excluded, i))
-		intervalchoice_right = IntervalChoice(z, intervalchoice.ub, _setitemstate(intervalchoice.itemstates, aux, i))
+		intervalchoice_right = IntervalChoice(z, intervalchoice.ub, setindex(intervalchoice.itemstates, aux, i))
 		return intervalchoice_left, intervalchoice_right
 	end
 end
@@ -75,6 +75,6 @@ function _squeeze(intervalchoice::IntervalChoice, s::ItemState, i::Int)
 end
 
 function _setitemstate(intervalchoice::IntervalChoice, s::ItemState, i::Int)
-	IntervalChoice(intervalchoice.lb, intervalchoice.ub, _setitemstate(intervalchoice.itemstates, s, i))
+	IntervalChoice(intervalchoice.lb, intervalchoice.ub, setindex(intervalchoice.itemstates, s, i))
 end
 

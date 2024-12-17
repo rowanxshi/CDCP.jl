@@ -55,7 +55,3 @@ function setsup(itemstates::SVector{S,ItemState}) where S
 	end
 end
 
-function _setitemstate(itemstates::SVector{S,ItemState}, s::ItemState, i::Int) where S # TODO: excise
-	setindex(itemstates, s, i)
-end
-

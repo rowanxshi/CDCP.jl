@@ -47,7 +47,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 	# no progress
 	value = convert(typeof(cdcp.value), -Inf)
 	begin
-		itemstates_new = _setitemstate(itemstates, aux, i)
+		itemstates_new = setindex(itemstates, aux, i)
 		cdcp.obj = obj
 		return itemstates_new, value, aux
 	end
