@@ -21,7 +21,7 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
 	if isnothing(zero_margin)
-		zero_margin = Default_Zero_Margin(equal_obj, obj2)
+		zero_margin = Default_Zero_Margin(equal_obj, obj2, zero(Z))
 	elseif !applicable(zero_margin, obj, 1, zbounds...)
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
@@ -30,10 +30,10 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	A = eltype(policy0.itemstates_s)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	singlesolvers = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
+	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
 end
 
-function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
+function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
 	S = length(cdcp.x.itemstates_s[1])
 	if obj isa Objective
 		cdcp.obj = _clearfcall(obj)
@@ -56,17 +56,18 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
 	if isnothing(zero_margin)
-		zero_margin = Default_Zero_Margin(equal_obj, obj2)
+		zero_margin = Default_Zero_Margin(equal_obj, obj2, zmin)
 	elseif !applicable(zero_margin, obj, 1, zbounds...)
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
+	elseif zero_margin isa Default_Zero_Margin
+		_reinit!(zero_margin)
 	end
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = cdcp.x[1]
 	resize!(solver.squeezing, 1)
 	solver.squeezing[1] = 1
 	empty!(solver.branching)
-	empty!(solver.lookup_zero_margin)
 	for m in solver.matcheds
 		empty!(m)
 	end
@@ -74,15 +75,6 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		s.obj = cdcp.obj
 		_reinit!(s; scdca=scdca)
 	end
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, zero_margin, solver.lookup_zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
 	return cdcp
-end
-
-function _copyℒ(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
-	Objective(obj.f, ℒ, obj.fcall)
-end
-
-# Fallback method assumes A is a mutable array
-function _copyℒ(obj::Objective{<:Any, A}, ℒ::A) where A
-	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
 end

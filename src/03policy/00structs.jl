@@ -50,19 +50,38 @@ function Equal_Obj(m, kwargs::NamedTuple=NamedTuple())
 	Equal_Obj(m, kwargs, Ref(0))
 end
 
-struct Default_Zero_Margin{F, O}
+struct Default_Zero_Margin{F, O, D <: AbstractDict}
 	equal_obj::F
 	obj2::O
+	memo::D
+end
+function Default_Zero_Margin(equal_obj, obj2::Objective{<: Any, A}, ::Z) where {A, Z <: Real}
+	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,A},Z}())
 end
 function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	# the order of true and false matters in case there is no interior solution
-	obj = _setℒ(obj, true, i)
-	obj2 = _setℒ(_copyℒ(zm.obj2, obj.ℒ), false, i)
-	zm.equal_obj(obj, obj2, zleft, zright)
+	key = (i, obj.ℒ)
+	z = get!(zm.memo, key) do
+		obj = _setℒ(obj, true, i)
+		obj2 = _setℒ(ℒ!(zm.obj2, obj.ℒ), false, i)
+		z, obj = zm.equal_obj(obj, obj2, zleft, zright)
+		z
+	end
+	z, obj
+end
+function _reinit!(zm::Default_Zero_Margin)
+	empty!(zm.memo)
+end
+
+function ℒ!(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
+	Objective(obj.f, ℒ, obj.fcall)
+end
+function ℒ!(obj::Objective{<:Any, A}, ℒ::A) where A
+	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
 end
 
 """
-    SqueezingPolicy{Z,A,AO,F1,F2,O,S,TR} <: CDCPSolver
+    SqueezingPolicy{Z,A,F1,F2,S,O} <: CDCPSolver
 
 A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, Eckert and Shi (2023).
 
@@ -88,13 +107,12 @@ Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the u
 	`equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
 	This requirement is a breaking change from earlier implementation.
 """
-struct SqueezingPolicy{Z,A,AO,F1,F2,O,S} <: CDCPSolver
+struct SqueezingPolicy{Z,A,F1,F2,S,O} <: CDCPSolver
 	scdca::Bool
 	intervalchoices::Vector{IntervalChoice{Z,A}}
 	squeezing::Vector{Int}
 	branching::Vector{Int}
 	zero_margin::F1
-	lookup_zero_margin::Dict{Tuple{Int,AO},Z} # TODO: redo memoisation
 	equal_obj::F2
 	matcheds::Vector{Vector{IntervalChoice{Z,A}}}
 	singlesolvers::Vector{S}
