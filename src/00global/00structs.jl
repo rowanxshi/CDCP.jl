@@ -31,10 +31,10 @@ function _setchoice(obj::Objective{<:Any,A}, ℒ::A) where A
 	Objective(obj.f, ℒ, obj.fcall)
 end
 
-function _setℒ(obj::Objective{<:Any,<:SVector}, value, index)
+function StaticArrays.setindex(obj::Objective{<:Any,<:SVector}, value, index)
 	Objective(obj.f, setindex(obj.ℒ, value, index), obj.fcall)
 end
-function _setℒ(obj::Objective, value, index) # fallback method assumes ℒ is mutable
+function StaticArrays.setindex(obj::Objective, value, index) # fallback method assumes ℒ is mutable
 	Objective(obj.f, setindex!(obj.ℒ, value, index), obj.fcall)
 end
 
@@ -81,9 +81,9 @@ end
 Evalutate the change in `obj` with optional parameter `z` when the `i`th item is included or not. This corresponds to the `D_j` function in earlier implementation.
 """
 function margin(obj::Objective, i::Int, z)
-	obj = _setℒ(obj, true, i)
+	obj = setindex(obj, true, i)
 	value1, obj = obj(z)
-	obj = _setℒ(obj, false, i)
+	obj = setindex(obj, false, i)
 	value0, obj = obj(z)
 	return value1, value0, obj
 end

@@ -53,8 +53,8 @@ function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	# the order of true and false matters in case there is no interior solution
 	key = (i, obj.ℒ)
 	z = get!(zm.memo, key) do
-		obj = _setℒ(obj, true, i)
-		obj2 = _setℒ(ℒ!(zm.obj2, obj.ℒ), false, i)
+		obj = setindex(obj, true, i)
+		obj2 = setindex(ℒ!(zm.obj2, obj.ℒ), false, i)
 		z, obj = zm.equal_obj(obj, obj2, zleft, zright)
 		z
 	end
