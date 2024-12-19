@@ -18,9 +18,9 @@ struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	itemstates_s::Vector{A}
 	zright::Z
 end
-function Policy(obj::Objective, zbounds)
+function Policy(obj::Objective, zbounds; itemstates=allundetermined(obj))
 	S = length(obj.ℒ)
-	Policy([first(zbounds)], [allundetermined(obj)], last(zbounds))
+	Policy([first(zbounds)], [itemstates], last(zbounds))
 end
 function Base.size(policy::Policy)
 	size(policy.itemstates_s)

@@ -12,17 +12,12 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 	return cdcp
 end
 
-function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
+function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
-	if isnothing(policy0)
-		policy = Policy(obj, zbounds)
-	else
-		policy = policy0
-	end
 	obj2 = deepcopy(obj)
-	# Harmonize user defined functions
-	if !applicable(equal_obj, obj, obj2, zbounds...)
-		# Assume equal_obj follows the old requirement for equalise_obj
+	# harmonize user defined functions
+	if !applicable(equal_obj, obj, obj2, zbounds...) # TODO: MOVE TO COMPAT SECTION
+		# assume equal_obj follows the old requirement for equalise_obj
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
 	if isnothing(zero_margin)
@@ -31,8 +26,8 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
-	intervalchoices = [policy[i] for i in eachindex(policy.itemstates_s)]
-	A = eltype(policy.itemstates_s)
+	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
+	A = eltype(policy0.itemstates_s)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	singlesolvers = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
 	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
@@ -55,12 +50,12 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	cdcp.state = inprogress
 	solver = cdcp.solver
 	obj2 = deepcopy(cdcp.obj)
-	# Harmonize user defined functions
+	# harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...)
-		# Assume equal_obj follows the old requirement for equalise_obj
+		# assume equal_obj follows the old requirement for equalise_obj
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
-	if zero_margin === nothing
+	if isnothing(zero_margin)
 		zero_margin = Default_Zero_Margin(equal_obj, obj2)
 	elseif !applicable(zero_margin, obj, 1, zbounds...)
 		@warn "Consider adapting `zero_margin` to the new method"
