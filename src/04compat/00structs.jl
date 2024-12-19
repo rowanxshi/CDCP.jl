@@ -32,3 +32,12 @@ end
 function Interval(Vs, l::Real, r::Real)
 	Interval(Vs..., l, r)
 end
+
+struct Equal_Obj{M,KW<:NamedTuple}
+	m::M
+	kwargs::KW
+	fcall::RefValue{Int}
+end
+function Equal_Obj(m, kwargs::NamedTuple=NamedTuple())
+	Equal_Obj(m, kwargs, Ref(0))
+end

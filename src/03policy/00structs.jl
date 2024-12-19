@@ -41,15 +41,6 @@ function (d::DiffObj)(z, fcall::RefValue)
 	(value2 - value1)
 end
 
-struct Equal_Obj{M,KW<:NamedTuple}
-	m::M #TODO: what is m???
-	kwargs::KW
-	fcall::RefValue{Int}
-end
-function Equal_Obj(m, kwargs::NamedTuple=NamedTuple())
-	Equal_Obj(m, kwargs, Ref(0))
-end
-
 struct Default_Zero_Margin{F, O, D <: AbstractDict}
 	equal_obj::F
 	obj2::O
