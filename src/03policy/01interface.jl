@@ -14,14 +14,8 @@ end
 
 function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0=nothing, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
-	if policy0 === nothing
-		if obj.ℒ isa SVector
-			allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
-			policy = Policy([zbounds[1]], [allundetermined], zbounds[2])
-		else
-			allundetermined = fill(undetermined, S)
-			policy = Policy([zbounds[1]], [allundetermined], zbounds[2])
-		end
+	if isnothing(policy0)
+		policy = Policy(obj, zbounds)
 	else
 		policy = policy0
 	end
@@ -61,19 +55,10 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	end
 	zmin = cdcp.x.cutoffs[1]
 	zbounds = (zmin, cdcp.x.zright)
-	if cdcp.obj.ℒ isa SVector
-		allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
-		resize!(cdcp.x.cutoffs, 1)
-		cdcp.x.cutoffs[1] = zmin
-		resize!(cdcp.x.itemstates_s, 1)
-		cdcp.x.itemstates_s[1] = allundetermined
-	else
-		allundetermined = fill(undetermined, S)
-		resize!(cdcp.x.cutoffs, 1)
-		cdcp.x.cutoffs[1] = zmin
-		resize!(cdcp.x.itemstates_s, 1)
-		cdcp.x.itemstates_s[1] = allundetermined
-	end
+	resize!(cdcp.x.cutoffs, 1)
+	cdcp.x.cutoffs[1] = zmin
+	resize!(cdcp.x.itemstates_s, 1)
+	cdcp.x.itemstates_s[1] = allundetermined(obj)
 	cdcp.value = convert(typeof(cdcp.value), -Inf)
 	cdcp.state = inprogress
 	solver = cdcp.solver

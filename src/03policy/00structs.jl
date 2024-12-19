@@ -18,6 +18,10 @@ struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	itemstates_s::Vector{A}
 	zright::Z
 end
+function Policy(obj::Objective, zbounds)
+	S = length(obj.ℒ)
+	Policy([first(zbounds)], [allundetermined(obj)], last(zbounds))
+end
 function Base.size(policy::Policy)
 	size(policy.itemstates_s)
 end
@@ -68,10 +72,9 @@ A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, 
 
 Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the use of the policy method for the problem. Users are required to specify the objective function `obj` that returns the value evaluated at a choice vector `ℒ` with a parameter `z` that is a number. `obj` must have a method of `obj(ℒ, z)` with `ℒ` being a Boolean choice vector. `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`. The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`. `zbounds` determines the range of the parameter `z`, which could be `(-Inf, Inf)` if `z` can be any real number.
 
-`equal_obj` is a user-specified function that returns the cutoff point `z0` such that for a given pair of input choices `ℒ1` and `ℒ2`, `obj(ℒ1, z0)` equals to `obj(ℒ2, z0)` with `zl <= z0 <= zr`. It can be defined with one of the two alternative methods: - `equal_obj((ℒ1, ℒ2), zl, zr))` where the pair of input choices is accepted as a tuple.
-- `equal_obj(obj1::Objective, obj2::Objective, zl, zr)` where `obj1` and `obj2`
-are the same objective function attached with different input vectors
-`obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively.
+`equal_obj` is a user-specified function that returns the cutoff point `z0` such that for a given pair of input choices `ℒ1` and `ℒ2`, `obj(ℒ1, z0)` equals to `obj(ℒ2, z0)` with `zleft <= z0 <= zright`. It can be defined with one of the two alternative methods:
+* `equal_obj((ℒ1, ℒ2), zleft, zright)` where the pair of input choices is accepted as a tuple.
+* `equal_obj(obj1::Objective, obj2::Objective, zleft, zright)` where `obj1` and `obj2` are the same objective function attached with different input vectors `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively.
 
 ## Keywords
 - `zero_margin=nothing`: An optionally specified function that returns `z0` such that the `i`th margin of the objective function is zero at `ℒ`. The function has a method `zero_margin(obj::Objective, i::Int, zleft, zright)` with `ℒ` attached to `obj`.
