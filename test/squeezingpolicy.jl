@@ -120,7 +120,7 @@ end
     p = init(SqueezingPolicy, obj, N, true, equal_obj, (-Inf, Inf),
         zero_margin=zero_margin)
     @time solve!(p);
-    x0 = deepcopy(p.x)
+    policy0 = deepcopy(p.x)
 
     for k in 2:length(p.x.cutoffs)
         p1 = init(Squeezing, obj, N, true,
@@ -148,5 +148,5 @@ end
     f = TestObj(0.5, N, v1)
     obj = Objective(f, SVector{N,Bool}(trues(N)))
     solve!(p; restart=true, obj=obj, scdca=true)
-    @test p.x == x0
+    @test p.x == policy0
 end
