@@ -94,10 +94,8 @@ struct SqueezingPolicy{Z,A,AO,F1,F2,O,S} <: CDCPSolver
 	squeezing::Vector{Int}
 	branching::Vector{Int}
 	zero_margin::F1
-	zero_margin_call::RefValue{Int}
 	lookup_zero_margin::Dict{Tuple{Int,AO},Z} # TODO: redo memoisation
 	equal_obj::F2
-	equal_obj_call::RefValue{Int}
 	matcheds::Vector{Vector{IntervalChoice{Z,A}}}
 	singlesolvers::Vector{S}
 	obj2::O

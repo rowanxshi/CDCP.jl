@@ -44,7 +44,6 @@ function squeeze_include!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	key = (i, obj.ℒ)
 	z = get!(lookup, key) do
 		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
-		cdcp.solver.zero_margin_call[] += 1
 		cdcp.obj = obj
 		z
 	end
@@ -68,7 +67,6 @@ function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	key = (i, obj.ℒ)
 	z = get!(lookup, key) do
 		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
-		cdcp.solver.zero_margin_call[] += 1
 		cdcp.obj = obj
 		z
 	end

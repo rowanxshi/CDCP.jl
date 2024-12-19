@@ -34,10 +34,13 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	end
 end
 
-function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates0)
-	_reset!(cdcp, z, itemstates0)
+function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
+	cdcp.state = inprogress
+	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
+	cdcp.x = itemstates
+	cdcp.value = -Inf
 	solve!(cdcp)
-	cdcp.state == success || error("single-agenet solver fails with z = ", cdcp.solver.z)
+	cdcp.state == success || error("single-agent solver fails with z = ", cdcp.solver.z)
 	return cdcp.x
 end
 

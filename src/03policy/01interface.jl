@@ -35,15 +35,7 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	A = eltype(policy.itemstates_s)
 	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
 	singlesolvers = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy.itemstates_s)), Int[], zero_margin, Ref(0), Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), equal_obj, Ref(0), matcheds, singlesolvers, obj2, nobranching, maxfcall), policy
-end
-
-function _reset!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
-	cdcp.state = inprogress
-	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
-	cdcp.x = itemstates
-	cdcp.value = -Inf
-	return cdcp
+	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, Dict{Tuple{Int,typeof(obj.ℒ)},Z}(), equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
 end
 
 function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
@@ -87,9 +79,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 		s.obj = cdcp.obj
 		_reinit!(s; scdca=scdca)
 	end
-	solver.zero_margin_call[] = 0
-	solver.equal_obj_call[] = 0
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, zero_margin, solver.zero_margin_call, solver.lookup_zero_margin, equal_obj, solver.equal_obj_call, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, zero_margin, solver.lookup_zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
 	return cdcp
 end
 
