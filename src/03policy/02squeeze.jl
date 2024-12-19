@@ -39,7 +39,7 @@ end
 
 function squeeze_include!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
-	obj = _setchoice(obj, scdca ? to_sup(intervalchoice.itemstates) : to_sub(intervalchoice.itemstates))
+	obj = setℒ(obj, scdca ? to_sup(intervalchoice.itemstates) : to_sub(intervalchoice.itemstates))
 	key = (i, obj.ℒ)
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 	if z <= intervalchoice.zleft # include the whole interval
@@ -56,7 +56,7 @@ end
 
 function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
-	obj = _setchoice(obj, scdca ? to_sub(intervalchoice.itemstates) : to_sup(intervalchoice.itemstates))
+	obj = setℒ(obj, scdca ? to_sub(intervalchoice.itemstates) : to_sup(intervalchoice.itemstates))
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 	if z >= intervalchoice.zright # Exclude the whole interval
 		intervalchoice = _squeeze(intervalchoice, excluded, i)

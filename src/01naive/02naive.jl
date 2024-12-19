@@ -24,7 +24,7 @@ function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
 		# iterate modifies ids in-place and returns (ids, ids)
 		next = iterate(C, ids)
 		while !isnothing(next)
-			_setchoice(obj, ids)
+			setℒ(obj, ids)
 			value, obj = obj(z)
 			if value > cdcp.value
 				cdcp.value = value

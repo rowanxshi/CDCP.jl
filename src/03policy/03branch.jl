@@ -48,8 +48,8 @@ function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left
 	zleft, itemstates_left, zright, itemstates_right = zleft0, itemstates_left0, zright0, itemstates_right0
 	while true
 		# itemstates_left and itemstates_right should always be different here
-		obj1 = _setchoice(cdcp.obj, to_sub(itemstates_left))
-		obj2 = _setchoice(obj2, to_sub(itemstates_right))
+		obj1 = setℒ(cdcp.obj, to_sub(itemstates_left))
+		obj2 = setℒ(obj2, to_sub(itemstates_right))
 		zmiddle, _ = equal_obj(obj1, obj2, zleft, zright)
 		# ! TODO Rowan proof double-check
 		if zleft < zmiddle < zright # Additional cutoff points in between

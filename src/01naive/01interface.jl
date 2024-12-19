@@ -4,7 +4,7 @@ function init_solverx(::Type{Naive}, obj, args...; z=nothing, kwargs...)
 	solver, x
 end
 
-function _setchoice(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int})
+function setℒ(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int})
 	fill!(obj.ℒ, false)
 	fill!(view(obj.ℒ, ids), true)
 	obj

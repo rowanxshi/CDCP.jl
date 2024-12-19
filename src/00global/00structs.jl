@@ -27,7 +27,7 @@ function Objective(f, ℒ)
 	Objective(f, ℒ, 0)
 end
 
-function _setchoice(obj::Objective{<:Any,A}, ℒ::A) where A
+function setℒ(obj::Objective{<:Any,A}, ℒ::A) where A
 	Objective(obj.f, ℒ, obj.fcall)
 end
 
