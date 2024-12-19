@@ -82,10 +82,10 @@ Evalutate the change in `obj` with optional parameter `z` when the `i`th item is
 """
 function margin(obj::Objective, i::Int, z)
 	obj = _setℒ(obj, true, i)
-	f1, obj = obj(z)
+	value1, obj = obj(z)
 	obj = _setℒ(obj, false, i)
-	f0, obj = obj(z)
-	return f1, f0, obj
+	value0, obj = obj(z)
+	return value1, value0, obj
 end
 
 @enum SolverState::Int8 begin

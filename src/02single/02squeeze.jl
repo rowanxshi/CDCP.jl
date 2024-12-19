@@ -56,12 +56,12 @@ end
 function isexcluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
 	obj, z = cdcp.obj, cdcp.solver.z
 	if cdcp.solver.scdca
-		sub = setsub(itemstates)
+		sub = to_sub(itemstates)
 		obj = _setchoice(obj, sub)
 		value1, value0, obj = margin(obj, i, z)
 		exclude = (value1 - value0 <= 0)
 	else
-		sup = setsup(itemstates)
+		sup = to_sup(itemstates)
 		obj = _setchoice(obj, sup)
 		value1, value0, obj = margin(obj, i, z)
 		exclude = (value1 - value0 < 0)
@@ -72,12 +72,12 @@ end
 function isincluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
 	obj, z = cdcp.obj, cdcp.solver.z
 	if cdcp.solver.scdca
-		sup = setsup(itemstates)
+		sup = to_sup(itemstates)
 		obj = _setchoice(obj, sup)
 		value1, value0, obj = margin(obj, i, z)
 		include = (value1 - value0 > 0)
 	else
-		sub = setsub(itemstates)
+		sub = to_sub(itemstates)
 		obj = _setchoice(obj, sub)
 		value1, value0, obj = margin(obj, i, z)
 		include = (value1 - value0 >= 0)

@@ -126,7 +126,7 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 	cutoffs[end] = cdcp.x.zright
 	resize!(policies, length(cdcp.x.itemstates_s))
 	for i in eachindex(policies)
-		policies[i] = BitVector(setsub(cdcp.x.itemstates_s[i]))
+		policies[i] = BitVector(to_sub(cdcp.x.itemstates_s[i]))
 	end
 	return cutoffs, policies
 end

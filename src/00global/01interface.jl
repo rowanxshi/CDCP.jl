@@ -31,7 +31,7 @@ function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
 	end
 end
 
-function setsub(itemstates::SVector{S,ItemState}) where S
+function to_sub(itemstates::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
@@ -43,7 +43,7 @@ function setsub(itemstates::SVector{S,ItemState}) where S
 	end
 end
 
-function setsup(itemstates::SVector{S,ItemState}) where S
+function to_sup(itemstates::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
