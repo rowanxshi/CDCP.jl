@@ -1,5 +1,6 @@
+# TODO: still nedd to review this whole file
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
-	restart && (cdcp = _reinit!(cdcp; obj=obj, zero_margin=zero_margin, equal_obj=equal_obj, scdca=scdca))
+	restart && (cdcp = _reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
 	cdcp.state = squeeze!(cdcp)
 	if cdcp.state == maxfcall_reached
 		@warn "maxfcall is reached before convergence"
@@ -56,8 +57,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 	if obj isa Objective
 		cdcp.obj = _clearfcall(obj)
 	else
-		cdcp.obj = Objective(obj, S < _static_threshold() ?
-			SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
+		cdcp.obj = Objective(obj, S < _static_threshold() ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
 	end
 	zmin = cdcp.x.cutoffs[1]
 	zbounds = (zmin, cdcp.x.zright)
