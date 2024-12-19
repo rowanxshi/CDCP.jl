@@ -30,7 +30,7 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 		# Assume equal_obj follows the old requirement for equalise_obj
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
-	if zero_margin === nothing
+	if isnothing(zero_margin)
 		zero_margin = Default_Zero_Margin(equal_obj, obj2)
 	elseif !applicable(zero_margin, obj, 1, zbounds...)
 		@warn "Consider adapting `zero_margin` to the new method"
@@ -60,7 +60,7 @@ function _reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, zero_margin
 			SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
 	end
 	zmin = cdcp.x.cutoffs[1]
-	zbounds = (zmin, cdcp.x.ub)
+	zbounds = (zmin, cdcp.x.zright)
 	if cdcp.obj.ℒ isa SVector
 		allundetermined = _fillstate(SVector{S,ItemState}, undetermined)
 		resize!(cdcp.x.cutoffs, 1)

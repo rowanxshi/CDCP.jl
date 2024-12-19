@@ -1,9 +1,8 @@
 struct IntervalChoice{Z,A<:AbstractVector{ItemState}}# <: AbstractVector{ItemState}
-	lb::Z
-	ub::Z
+	zleft::Z
+	zright::Z
 	itemstates::A
 end
-
 function Base.size(intervalchoice::IntervalChoice)
 	size(intervalchoice.itemstates)
 end
@@ -11,41 +10,38 @@ Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, 
 	intervalchoice.itemstates[i]
 end
 function _lb(intervalchoice::IntervalChoice)
-	intervalchoice.lb
+	intervalchoice.zleft
 end
 
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	cutoffs::Vector{Z}
 	itemstates_s::Vector{A}
-	ub::Z
+	zright::Z
 end
-
 function Base.size(policy::Policy)
 	size(policy.itemstates_s)
 end
 Base.@propagate_inbounds function Base.getindex(policy::Policy, i::Int)
-	IntervalChoice(policy.cutoffs[i], i+1>length(policy.itemstates_s) ? policy.ub : policy.cutoffs[i+1], policy.itemstates_s[i])
+	IntervalChoice(policy.cutoffs[i], i+1>length(policy.itemstates_s) ? policy.zright : policy.cutoffs[i+1], policy.itemstates_s[i])
 end
 
 struct DiffObj{Obj}
 	obj1::Obj
 	obj2::Obj
 end
-
-function (d::DiffObj)(z, fcall)
+function (d::DiffObj)(z, fcall::RefValue)
 	# ℒ should have been set
-	f1, obj1 = d.obj1(z)
-	f2, obj2 = d.obj2(z)
+	value1, _ = d.obj1(z)
+	value2, _ = d.obj2(z)
 	fcall[] += 2
-	return f2 - f1
+	(value2 - value1)
 end
 
 struct Equal_Obj{M,KW<:NamedTuple}
-	m::M
+	m::M #TODO: what is m???
 	kwargs::KW
 	fcall::RefValue{Int}
 end
-
 function Equal_Obj(m, kwargs::NamedTuple=NamedTuple())
 	Equal_Obj(m, kwargs, Ref(0))
 end
@@ -54,12 +50,11 @@ struct Default_Zero_Margin{F, O}
 	equal_obj::F
 	obj2::O
 end
-
-function (zm::Default_Zero_Margin)(obj::Objective, i, lb, ub)
+function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	# the order of true and false matters in case there is no interior solution
 	obj = _setℒ(obj, true, i)
 	obj2 = _setℒ(_copyℒ(zm.obj2, obj.ℒ), false, i)
-	return zm.equal_obj(obj, obj2, lb, ub)
+	zm.equal_obj(obj, obj2, zleft, zright)
 end
 
 """
@@ -79,7 +74,7 @@ are the same objective function attached with different input vectors
 `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively.
 
 ## Keywords
-- `zero_margin=nothing`: An optionally specified function that returns `z0` such that the `i`th margin of the objective function is zero at `ℒ`. The function has a method `zero_margin(obj::Objective, i::Int, lb, ub)` with `ℒ` attached to `obj`.
+- `zero_margin=nothing`: An optionally specified function that returns `z0` such that the `i`th margin of the objective function is zero at `ℒ`. The function has a method `zero_margin(obj::Objective, i::Int, zleft, zright)` with `ℒ` attached to `obj`.
 - `ntasks=1`: Number of threads used in the branching process.
 - `nobranching::Bool=false`: Skip the branching stage; only for inspecting the solver.
 - `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple`; a single-agent solver is used in the branching stage.

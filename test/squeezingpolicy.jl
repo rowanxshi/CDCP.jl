@@ -1,4 +1,4 @@
-function zero_margin(obj::Objective{TestObj}, i, lb, ub)
+function zero_margin(obj::Objective{TestObj}, i, zleft, zright)
     δ, S, val = obj.f.δ, obj.f.S, obj.f.val
     f = range(0.1, length=S, step=0.1)
     ℒ1 = setindex(obj.ℒ, true, i)
@@ -8,7 +8,7 @@ function zero_margin(obj::Objective{TestObj}, i, lb, ub)
     return z, obj
 end
 
-function equal_obj(obj1::Objective{TestObj}, obj2::Objective{TestObj}, lb, ub)
+function equal_obj(obj1::Objective{TestObj}, obj2::Objective{TestObj}, zleft, zright)
     δ, S, val = obj1.f.δ, obj1.f.S, obj1.f.val
     f = range(0.1, length=S, step=0.1)
     z = sum(i->obj1.ℒ[i]*val[i], 1:S)^δ - sum(i->obj2.ℒ[i]*val[i], 1:S)^δ

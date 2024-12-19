@@ -26,21 +26,21 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalC
 	obj = _setchoice(obj, scdca ? setsup(intervalchoice.itemstates) : setsub(intervalchoice.itemstates))
 	key = (i, obj.ℒ)
 	z = get(lookup, key, nothing)
-	if z === nothing
-		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.lb, intervalchoice.ub)
+	if isnothing(z)
+		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 		lookup[key] = z
 		cdcp.solver.zero_margin_call[] += 1
 		cdcp.obj = obj
 	end
-	if z <= intervalchoice.lb # Include the whole interval
+	if z <= intervalchoice.zleft # Include the whole interval
 		intervalchoice = _squeeze(intervalchoice, included, i)
 		return (intervalchoice, )
-	elseif z >= intervalchoice.ub # Cannot include any part of the interval
+	elseif z >= intervalchoice.zright # Cannot include any part of the interval
 		return squeeze_exclude!(cdcp, intervalchoice, i)
 	else
-		intervalchoice_left = IntervalChoice(intervalchoice.lb, z, intervalchoice.itemstates)
+		intervalchoice_left = IntervalChoice(intervalchoice.zleft, z, intervalchoice.itemstates)
 		intervalchoices = squeeze_exclude!(cdcp, intervalchoice_left, i)
-		intervalchoice_right = IntervalChoice(z, intervalchoice.ub, _squeeze(intervalchoice.itemstates, included, i))
+		intervalchoice_right = IntervalChoice(z, intervalchoice.zright, _squeeze(intervalchoice.itemstates, included, i))
 		return (intervalchoices..., intervalchoice_right)
 	end
 end
@@ -52,29 +52,29 @@ function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	key = (i, obj.ℒ)
 	z = get(lookup, key, nothing)
 	if z === nothing
-		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.lb, intervalchoice.ub)
+		z, obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 		lookup[key] = z
 		cdcp.solver.zero_margin_call[] += 1
 		cdcp.obj = obj
 	end
-	if z >= intervalchoice.ub # Exclude the whole interval
+	if z >= intervalchoice.zright # Exclude the whole interval
 		intervalchoice = _squeeze(intervalchoice, excluded, i)
 		return (intervalchoice, )
-	elseif z <= intervalchoice.lb # Cannot exclude any part of the interval
+	elseif z <= intervalchoice.zleft # Cannot exclude any part of the interval
 		intervalchoice = _setitemstate(intervalchoice, aux, i) # Don't use _squeeze
 		return (intervalchoice, )
 	else
-		intervalchoice_left = IntervalChoice(intervalchoice.lb, z, _squeeze(intervalchoice.itemstates, excluded, i))
-		intervalchoice_right = IntervalChoice(z, intervalchoice.ub, setindex(intervalchoice.itemstates, aux, i))
+		intervalchoice_left = IntervalChoice(intervalchoice.zleft, z, _squeeze(intervalchoice.itemstates, excluded, i))
+		intervalchoice_right = IntervalChoice(z, intervalchoice.zright, setindex(intervalchoice.itemstates, aux, i))
 		return intervalchoice_left, intervalchoice_right
 	end
 end
 
 function _squeeze(intervalchoice::IntervalChoice, s::ItemState, i::Int)
-	IntervalChoice(intervalchoice.lb, intervalchoice.ub, _squeeze(intervalchoice.itemstates, s, i))
+	IntervalChoice(intervalchoice.zleft, intervalchoice.zright, _squeeze(intervalchoice.itemstates, s, i))
 end
 
 function _setitemstate(intervalchoice::IntervalChoice, s::ItemState, i::Int)
-	IntervalChoice(intervalchoice.lb, intervalchoice.ub, setindex(intervalchoice.itemstates, s, i))
+	IntervalChoice(intervalchoice.zleft, intervalchoice.zright, setindex(intervalchoice.itemstates, s, i))
 end
 

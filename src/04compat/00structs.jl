@@ -12,9 +12,9 @@ struct Wrapped_Zero_D_j_Obj{F}
 	J::Vector{Bool}
 end
 
-function (w::Wrapped_Zero_D_j_Obj)(obj, i, lb, ub)
+function (w::Wrapped_Zero_D_j_Obj)(obj, i, zleft, zright)
 	copyto!(w.J, obj.ℒ)
-	z = w.f(i, w.J, lb, ub)
+	z = w.f(i, w.J, zleft, zright)
 	obj = addfcall(obj, 1)
 	return z, obj
 end
@@ -23,7 +23,7 @@ struct Interval{T <: AbstractVector{Bool}, N <: Real}
 	sub::T
 	sup::T
 	aux::T
-	l::N
+	l::N # TODO: zleft and zright
 	r::N
 end
 function Interval(J::AbstractVector{Bool}, l::Real, r::Real)
