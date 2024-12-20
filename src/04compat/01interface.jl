@@ -5,12 +5,20 @@ Solve a combinatorial discrete choice problem with objective function `π(J)` ov
 
 !!! warning
 
-	This method exists only for the sake of backward compatibility.
-	Future use should prefer the interface based on `solve(Naive, ...)`.
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Naive, ...)`.
 """
 function naive(C::Integer; obj, z=nothing)
 	naive!(falses(C); obj, z)
 end
+"""
+    naive!(J::AbstractVector{Bool}; obj)
+
+Similar to [`naive`](@ref), but accepts a pre-allocated vector `J`.
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Naive, ...)`.
+"""
 function naive!(J::AbstractVector{Bool}; obj)
 	Base.depwarn("Consider the new interface for solution with exhaustion using the problem with `Naive`", :naive!)
 	C = length(J)
@@ -28,13 +36,21 @@ The solver uses the objective function `obj(J)` which must accept as argument a 
 
 !!! warning
 
-	This method exists only for the sake of backward compatibility.
-	Future use should prefer the interface based on `solve(Squeezing, ...)`.
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Squeezing, ...)`.
 """
 function solve(C::Integer; scdca::Bool, obj)
 	wrapped_obj = Objective(obj, SVector{C,Bool}(trues(C)))
 	return solve(Squeezing, wrapped_obj, scdca)
 end
+"""
+    solve!((sub, sup, aux); scdca::Bool, obj, restart::Bool=true)
+
+Solve in-place a combinatorial discrete choice problem with SCD-C from above if `scdca` is true (otherwise, from below). The solver uses the objective function `obj(J)` and initiates using the Boolean vectors `(sub, sup, aux)` if `restart=false`. The objective function `obj` must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Squeezing, ...)`.
+"""
 function solve!((sub, sup, aux); scdca::Bool, obj, restart::Bool=true, kwargs...)
 	Base.depwarn("Consider the new interface for solving the single-agent problem with `Squeezing`", :solve!)
 	C = length(sub)
@@ -55,12 +71,9 @@ Find the policy function for a combinatorial discrete choice problem over `C` ch
 
 The solver can optionally take `zero_D_j_obj(j, J, l, r)`, a user-supplied function that identifies the `z` where the marginal value of item `j` to set `J` is zero. The solver provides the interval `[l, r]` within which this marginal type is located. Please return `NaN` instead of `nothing` if the marginal type is not within the interval. If not provided, the solver automatically constructs these using the `equalise_obj` function.
 
-See also: [`solve!`](@ref), [`solve`](@ref)
-
 !!! warning
 
-	This method exists only for the sake of backward compatibility.
-	Future use should prefer the interface based on `solve(SqueezingPolicy, ...)`.
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(SqueezingPolicy, ...)`.
 """
 function policy(C::Integer; kwargs...)
 	working = Vector{Interval{BitVector, Float64}}(undef, 0)
@@ -70,7 +83,16 @@ function policy(C::Integer; kwargs...)
 	policies = Union{Nothing, BitVector}[]
 	policy!((cutoffs, policies), (working, converged, done), C; kwargs...)
 end
-function policy!((cutoffs, policies), containers, C::Integer; scdca::Bool, obj, equalise_obj, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, restart::Bool = true, singlekw=NamedTuple(), kwargs...)
+"""
+    policy!((cutoffs, policies), containers0, C::Integer; scdca::Bool, obj, equalise_obj, zero_D_j_obj=zero_D_j(equalise_obj, falses(C)), restart::Bool=true)
+
+The similar to [`policy`](@ref), but the solver initiates with `working0` in `containers0 = (working0, _, _)` if `restart=false`.
+
+!!! warning
+
+    This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(SqueezingPolicy, ...)`.
+"""
+function policy!((cutoffs, policies), containers, C::Integer; scdca::Bool, obj, equalise_obj, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), restart::Bool=true, singlekw=NamedTuple(), kwargs...)
 	Base.depwarn("Consider the new interface for solving the policy problem with `SqueezingPolicy`", :policy!)
 
 	restart && restart!(containers, C)

@@ -1,6 +1,7 @@
 """
-Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (2023).
-See [here](https://github.com/rowanxshi/CDCP.jl) for more.
+Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (2024).
+
+See also [`solve`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
 """
 module CombinatorialDiscreteChoiceProblems
 
@@ -15,9 +16,9 @@ import CommonSolve: init, solve!, solve
 export init, solve!, solve
 
 export Objective,
-       addfcall,
        margin,
        CDCProblem,
+       CDCPSolver,
        SolverState,
        ItemState,
        undetermined,
@@ -26,9 +27,7 @@ export Objective,
        aux,
 
        Naive,
-
        Squeezing,
-
        Policy,
        SqueezingPolicy
 

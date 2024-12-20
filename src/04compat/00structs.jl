@@ -23,7 +23,7 @@ struct Interval{T <: AbstractVector{Bool}, N <: Real}
 	sub::T
 	sup::T
 	aux::T
-	l::N # TODO: zleft and zright
+	l::N
 	r::N
 end
 function Interval(J::AbstractVector{Bool}, l::Real, r::Real)

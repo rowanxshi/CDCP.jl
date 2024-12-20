@@ -5,7 +5,7 @@ using Random
 using Roots
 using StaticArrays
 
-using CombinatorialDiscreteChoiceProblems: Equal_Obj, clearfcall
+using CombinatorialDiscreteChoiceProblems: Equal_Obj, clearfcall, addfcall
 
 const CDCP = CombinatorialDiscreteChoiceProblems
 

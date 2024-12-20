@@ -2,6 +2,8 @@
     CDCPSolver
 
 Abstract type for all solution algorithms for a [`CDCProblem`](@ref).
+
+See also [`Naive`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
 """
 abstract type CDCPSolver end
 
@@ -12,10 +14,11 @@ A wrapped objective function for solving a [`CDCProblem`](@ref). This facilitate
 
 Users are *not* required to construct `Objective` unless there is a need for fine-grained control.
 
-# Constructor
-	Objective(f, ℒ, fcall = 0)
-
-Construct an instance of `Objective` with objective function `f` and an input vector `ℒ`. `f` must always accept `ℒ` as the first argument and may additionally accept an optional argument `z` for parameter (e.g., productivity).
+Fields
+===
+* `f::F`: objective function
+* `ℒ::V`: the decision vector at which to evaluate the objective function
+* `fcall::Int = 0`: the number of times the objective has been called, used to track whether the maximum number of objective calls has been reached (see also [`CDCProblem`](@ref))
 """
 struct Objective{F,V <: AbstractVector}
 	f::F
@@ -56,11 +59,6 @@ function static_threshold()
 	256
 end
 
-"""
-    addfcall(obj::Objective, n=1)
-
-Add `n` to the counter for function call for `obj`.
-"""
 function addfcall(obj::Objective, n=1)
 	Objective(obj.f, obj.ℒ, obj.fcall+n)
 end
@@ -76,9 +74,9 @@ function (obj::Objective)(::Nothing)
 end
 
 """
-    margin(obj::Objective, i::Int, z)
+    margin(obj::Objective, ℓ::Int, z)
 
-Evaluate the change in `obj` with optional parameter `z` when the `i`th item is included or not. This corresponds to the `D_j` function in earlier implementation.
+Evaluate the change in `obj` with optional parameter `z` when the `ℓ`th item is included or not. This corresponds to the `D_j` function in earlier implementation.
 """
 function margin(obj::Objective, i::Int, z)
 	obj = setindex(obj, true, i)
@@ -88,23 +86,61 @@ function margin(obj::Objective, i::Int, z)
 	return value1, value0, obj
 end
 
+"""
+    SolverState::Int8
+
+An `Enum` type with values:
+* `inprogress`
+* `success`
+* `maxfcall_reached`
+
+See also [`solve`](@ref), [`CDCProblem`](@ref).
+"""
 @enum SolverState::Int8 begin
 	inprogress
 	success
 	maxfcall_reached
 end
 
+"""
+    ItemState::Int8
+
+An `Enum` type describing the state of item `ℓ` with values:
+* `undetermined`: not yet checked
+* `included`: from squeezing, definitely included
+* `excluded`: from squeezing, definitely excluded
+* `aux`: checked, but cannot definitively include or exclude based on squeezing
+
+See also [`solve`](@ref), [`CDCProblem`](@ref).
+"""
 @enum ItemState::Int8 begin
 	undetermined
 	included
 	excluded
 	aux
 end
+function Base.convert(::Type{Bool}, itemstate::ItemState)
+	if itemstate == included
+		return true
+	elseif itemstate == excluded
+		return false
+	else
+		error("Attempted to convert $itemstate to boolean")
+	end
+end
 
 """
     CDCProblem{M<:CDCPSolver, O<:Objective, T, F<:AbstractFloat}
 
-Results from solving a combinatorial discrete choice problem. When a solution is attained, it can be retrieved from the field `x`.
+Results from solving a combinatorial discrete choice problem with [`solve`](@ref). When a solution is attained, it can be retrieved from the field `x`.
+
+Fields
+===
+* `solver::`[`CDCPSolver`](@ref)
+* `obj::`[`Objective`]: the objective function
+* `x`: the solution, once [`solve`](@ref)d
+* `value`: the maximum value found by the solver
+* `state::`[`SolverState`](@ref)
 """
 mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, T, F<:AbstractFloat}
 	solver::M

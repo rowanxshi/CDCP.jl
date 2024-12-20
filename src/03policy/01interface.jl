@@ -1,4 +1,3 @@
-# TODO: still nedd to review this whole file
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
 	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
 	cdcp.state = squeeze!(cdcp)

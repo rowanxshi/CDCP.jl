@@ -10,10 +10,31 @@ Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, 
 	intervalchoice.itemstates[i]
 end
 
+"""
+    Policy{Z,V<:AbstractVector{ItemState}} <: AbstractVector{IntervalChoice{Z,V}}
+
+Policy function derived from [`SqueezingPolicy`](@ref).
+
+Given a policy function `policy::Policy`, the optimal decision set of a type `z` can be retrieved as expected, i.e. `policy(z)`.
+
+See also [`solve`](@ref), [`CDCProblem`](@ref).
+
+Fields
+===
+* `cutoffs::Vector{Z}`: cutoff types at which optimal decision set switches
+* `itemstates_s::Vector{V}`: a vector of decision sets, so that `itemstates_s[k]` corresponds to the types above `cutoffs[k]` and below `cutoffs[k+1]`
+* `zright::Z`: the 
+
+"""
 struct Policy{Z,V <: AbstractVector{ItemState}} <: AbstractVector{IntervalChoice{Z,V}}
 	cutoffs::Vector{Z}
 	itemstates_s::Vector{V}
 	zright::Z
+end
+function (policy::Policy)(z)
+	(z ≤ first(policy.cutoffs)) && error("provided type $z is less than the lowest cutoff $first(policy.cutoffs)")
+	k = findlast(≤(z), policy.cutoffs)
+	policy.itemstates_s[k]
 end
 function Policy(obj::Objective, zbounds; itemstates=allundetermined(obj))
 	S = length(obj.ℒ)
@@ -69,33 +90,27 @@ function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V
 end
 
 """
-    SqueezingPolicy{Z,V <: AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
+    SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 
-A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, Eckert and Shi (2023).
+A type for solving a [`CDCProblem`](@ref) with policy function squeezing.
 
-# Usage
-	solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
-	solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false)
+See also [`solve`](@ref).
 
-Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the use of the policy method for the problem. Users are required to specify the objective function `obj` that returns the value evaluated at a choice vector `ℒ` with a parameter `z` that is a number. `obj` must have a method of `obj(ℒ, z)` with `ℒ` being a Boolean choice vector. `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`. The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`. `zbounds` determines the range of the parameter `z`, which could be `(-Inf, Inf)` if `z` can be any real number.
-
-`equal_obj` is a user-specified function that returns the cutoff point `z0` such that for a given pair of input choices `ℒ1` and `ℒ2`, `obj(ℒ1, z0)` equals to `obj(ℒ2, z0)` with `zleft <= z0 <= zright`. It can be defined with one of the two alternative methods:
-* `equal_obj((ℒ1, ℒ2), zleft, zright)` where the pair of input choices is accepted as a tuple.
-* `equal_obj(obj1::Objective, obj2::Objective, zleft, zright)` where `obj1` and `obj2` are the same objective function attached with different input vectors `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively.
-
-## Keywords
-- `zero_margin=nothing`: An optionally specified function that returns `z0` such that the `i`th margin of the objective function is zero at `ℒ`. The function has a method `zero_margin(obj::Objective, i::Int, zleft, zright)` with `ℒ` attached to `obj`.
-- `ntasks=1`: Number of threads used in the branching process.
-- `nobranching::Bool=false`: Skip the branching stage; only for inspecting the solver.
-- `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple`; a single-agent solver is used in the branching stage.
-
-!!! info
-
-	In case a cutoff point is not found,
-	`equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
-	This requirement is a breaking change from earlier implementation.
+Fields
+===
+* `scdca::Bool`
+* `intervalchoices::Vector{IntervalChoice{Z,V}}`
+* `squeezing_indices::Vector{Int}`
+* `branching_indices::Vector{Int}`
+* `zero_margin::F1`
+* `equal_obj::F2`
+* `matcheds::Vector{Vector{IntervalChoice{Z,V}}}`
+* `singlesolvers::Vector{S}`
+* `obj2::O`
+* `nobranching::Bool`
+* `maxfcall::Int`
 """
-struct SqueezingPolicy{Z,V <: AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
+struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	scdca::Bool
 	intervalchoices::Vector{IntervalChoice{Z,V}}
 	squeezing_indices::Vector{Int}
