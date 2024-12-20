@@ -18,7 +18,7 @@ end
 	@test value == f(trues(10))
 	@test isone(obj.fcall)
 
-	obj = _clearfcall(obj)
+	obj = clearfcall(obj)
 	@test iszero(obj.fcall)
 	value, obj = obj(2)
 	@test value == f(trues(10), 2)

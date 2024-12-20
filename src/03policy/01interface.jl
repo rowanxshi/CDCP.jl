@@ -1,6 +1,6 @@
 # TODO: still nedd to review this whole file
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
-	restart && (cdcp = _reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
+	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
 	cdcp.state = squeeze!(cdcp)
 	if cdcp.state == maxfcall_reached
 		@warn "maxfcall is reached before convergence"
@@ -33,12 +33,12 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
 end
 
-function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
+function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
 	S = length(cdcp.x.itemstates_s[1])
 	if obj isa Objective
-		cdcp.obj = _clearfcall(obj)
+		cdcp.obj = clearfcall(obj)
 	else
-		cdcp.obj = Objective(obj, S < _static_threshold() ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
+		cdcp.obj = Objective(obj, S < static_threshold() ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
 	end
 	zmin = cdcp.x.cutoffs[1]
 	zbounds = (zmin, cdcp.x.zright)
@@ -61,7 +61,7 @@ function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, eq
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	elseif zero_margin isa Default_Zero_Margin
-		_reinit!(zero_margin)
+		reinit!(zero_margin)
 	end
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = cdcp.x[1]
@@ -73,7 +73,7 @@ function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, eq
 	end
 	for s in solver.singlesolvers
 		s.obj = cdcp.obj
-		_reinit!(s; scdca=scdca)
+		reinit!(s; scdca=scdca)
 	end
 	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
 	return cdcp

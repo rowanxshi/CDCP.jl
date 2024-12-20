@@ -46,7 +46,7 @@ function coincide(C::Int, scdca::Bool = false; seed::Int = 10)
 	(cdcp, ) = initiate(C, scdca, seed = seed)
 
 	J = falses(C)
-	Vs = CDCP._containers(C)
+	Vs = CDCP.containers(C)
 	
 	(cutoffs, policies) = CDCP.policy(C; cdcp...)
 	

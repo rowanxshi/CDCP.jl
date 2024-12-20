@@ -1,21 +1,21 @@
-function _containers(C::Integer)
+function containers(C::Integer)
 	sub = falses(C)
 	sup = trues(C)
 	aux = falses(C)
 	return (sub, sup, aux)
 end
 
-function _containers(Vs)
+function containers(Vs)
 	working = [Vs; ]
 	converged = similar(working)
 	(working, converged)
 end
 
-function _checklength(::SVector{S,ItemState}, sub, sup, aux) where S
+function checklength(::SVector{S,ItemState}, sub, sup, aux) where S
 	length(sub) == length(sup) == length(aux) == S || throw(ArgumentError("length of sub, sup, aux are inconsistent with C"))
 end
 
-function _parse_state(sub::Bool, sup::Bool, isaux::Bool)
+function parse_state(sub::Bool, sup::Bool, isaux::Bool)
 	if isaux
 		return aux
 	elseif sub != sup
@@ -27,21 +27,21 @@ function _parse_state(sub::Bool, sup::Bool, isaux::Bool)
 	end
 end
 
-function _parse_triplet(itemstates::SVector{S,ItemState}, sub, sup, aux) where S
+function parse_triplet(itemstates::SVector{S,ItemState}, sub, sup, aux) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(_parse_state(
+			push!(ex.args, :(parse_state(
 				@inbounds(sub[$i]), @inbounds(sup[$i]), @inbounds(aux[$i]))))
 		end
-		return :(_checklength(itemstates, sub, sup, aux); SVector{S,ItemState}($ex))
+		return :(checklength(itemstates, sub, sup, aux); SVector{S,ItemState}($ex))
 	else
-		_checklength(itemstates, sub, sup, aux)
-		return SVector{S,ItemState}(ntuple(i->_parse_state(sub[i], sup[i], aux[i]), S))
+		checklength(itemstates, sub, sup, aux)
+		return SVector{S,ItemState}(ntuple(i->parse_state(sub[i], sup[i], aux[i]), S))
 	end
 end
 
-function _invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool},
+function invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool},
 		isaux::AbstractVector{Bool}, itemstates::SVector{S,ItemState}) where S
 	@inbounds for i in 1:S
 		itemstate = itemstates[i]
@@ -73,7 +73,7 @@ end
 
 function restart!((working, converged, done), C)
 	empty!.((working, converged, done))
-	int = Interval(_containers(C), -Inf, Inf)
+	int = Interval(containers(C), -Inf, Inf)
 	push!(working, int)
 end
 

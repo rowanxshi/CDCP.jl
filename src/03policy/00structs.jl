@@ -9,9 +9,6 @@ end
 Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, i::Int)
 	intervalchoice.itemstates[i]
 end
-function _lb(intervalchoice::IntervalChoice)
-	intervalchoice.zleft
-end
 
 struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
 	cutoffs::Vector{Z}
@@ -60,7 +57,7 @@ function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	end
 	z, obj
 end
-function _reinit!(zm::Default_Zero_Margin)
+function reinit!(zm::Default_Zero_Margin)
 	empty!(zm.memo)
 end
 

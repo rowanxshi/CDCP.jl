@@ -43,13 +43,13 @@ function squeeze_include!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	key = (i, obj.ℒ)
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 	if z <= intervalchoice.zleft # include the whole interval
-		intervalchoice = _squeeze(intervalchoice, included, i)
+		intervalchoice = squeeze(intervalchoice, included, i)
 		return (intervalchoice, )
 	elseif z >= intervalchoice.zright # cannot include any part of the interval
 		return (intervalchoice, )
 	else
 		intervalchoice_left = IntervalChoice(intervalchoice.zleft, z, intervalchoice.itemstates)
-		intervalchoice_right = IntervalChoice(z, intervalchoice.zright, _squeeze(intervalchoice.itemstates, included, i))
+		intervalchoice_right = IntervalChoice(z, intervalchoice.zright, squeeze(intervalchoice.itemstates, included, i))
 		return (intervalchoice_left, intervalchoice_right)
 	end
 end
@@ -58,24 +58,24 @@ function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
 	obj = setℒ(obj, scdca ? to_sub(intervalchoice.itemstates) : to_sup(intervalchoice.itemstates))
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
-	if z >= intervalchoice.zright # Exclude the whole interval
-		intervalchoice = _squeeze(intervalchoice, excluded, i)
+	if z >= intervalchoice.zright # exclude the whole interval
+		intervalchoice = squeeze(intervalchoice, excluded, i)
 		return (intervalchoice, )
-	elseif z <= intervalchoice.zleft # Cannot exclude any part of the interval
-		intervalchoice = _setitemstate(intervalchoice, aux, i) # Don't use _squeeze
+	elseif z <= intervalchoice.zleft # cannot exclude any part of the interval
+		intervalchoice = setindex(intervalchoice, aux, i)
 		return (intervalchoice, )
 	else
-		intervalchoice_left = IntervalChoice(intervalchoice.zleft, z, _squeeze(intervalchoice.itemstates, excluded, i))
+		intervalchoice_left = IntervalChoice(intervalchoice.zleft, z, squeeze(intervalchoice.itemstates, excluded, i))
 		intervalchoice_right = IntervalChoice(z, intervalchoice.zright, setindex(intervalchoice.itemstates, aux, i))
 		return intervalchoice_left, intervalchoice_right
 	end
 end
 
-function _squeeze(intervalchoice::IntervalChoice, s::ItemState, i::Int)
-	IntervalChoice(intervalchoice.zleft, intervalchoice.zright, _squeeze(intervalchoice.itemstates, s, i))
+function squeeze(intervalchoice::IntervalChoice, s::ItemState, i::Int)
+	IntervalChoice(intervalchoice.zleft, intervalchoice.zright, squeeze(intervalchoice.itemstates, s, i))
 end
 
-function _setitemstate(intervalchoice::IntervalChoice, s::ItemState, i::Int)
+function StaticArrays.setindex(intervalchoice::IntervalChoice, s::ItemState, i::Int)
 	IntervalChoice(intervalchoice.zleft, intervalchoice.zright, setindex(intervalchoice.itemstates, s, i))
 end
 

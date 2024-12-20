@@ -19,7 +19,28 @@ function init(::Type{M}, obj, S::Integer, args...; valuetype::Type=Float64, kwar
 	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
 
-function _fillstate(::Type{<:SVector{S}}, s::ItemState) where S
+function allundetermined!(itemstates)
+	if itemstates isa SVector
+		S = length(itemstates)
+		itemstates = fillstate(SVector{S,ItemState}, undetermined)
+	else
+		fill!(itemstates, undetermined)
+	end
+	itemstates
+end
+function allundetermined(obj::Objective)
+	allundetermined(obj.ℒ)
+end
+function allundetermined(ℒ::AbstractVector)
+	S = length(ℒ)
+	if ℒ isa SVector
+		itemstates = fillstate(SVector{S,ItemState}, undetermined)
+	else
+		itemstates = fill(undetermined, S)
+	end
+end
+
+function fillstate(::Type{<:SVector{S}}, s::ItemState) where S
 	if @generated
 		ex = :(())
 		for i in 1:S

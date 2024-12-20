@@ -33,14 +33,14 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 	# check exclude
 	exclude, obj, value0 = isexcluded(cdcp, itemstates, i)	
 	if exclude
-		itemstates_new = _squeeze(itemstates, excluded, i)
+		itemstates_new = squeeze(itemstates, excluded, i)
 		cdcp.obj = obj
 		return itemstates_new, value0, excluded
 	end
 	# check include
 	include, obj, value1 = isincluded(cdcp, itemstates, i)
 	if include
-		itemstates_new = _squeeze(itemstates, included, i)
+		itemstates_new = squeeze(itemstates, included, i)
 		cdcp.obj = obj
 		return itemstates_new, value1, included
 	end
@@ -85,19 +85,19 @@ function isincluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{It
 	return include, obj, value1
 end
 
-function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S
+function squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(_squeeze(itemstates, s, k, $i)))
+			push!(ex.args, :(squeeze(itemstates, s, k, $i)))
 		end
 		return :(SVector{S,ItemState}($ex))
 	else
-		return SVector{S,ItemState}(ntuple(i->_squeeze(itemstates, s, k, i), S))
+		return SVector{S,ItemState}(ntuple(i->squeeze(itemstates, s, k, i), S))
 	end
 end
 
-function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
+function squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
 	if i == k
 		return s
 	else

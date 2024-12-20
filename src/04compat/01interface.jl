@@ -45,11 +45,11 @@ function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing, containers
 	C = length(sub)
 	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
 	cdcp = init(Squeezing, wobj, C, scdca; z=z, restart=restart)
-	# Allow setting initial choice by (sub, sup, aux)
-	restart || (cdcp.x = _parse_triplet(cdcp.x, sub, sup, aux))
+	# allow setting initial choice by (sub, sup, aux)
+	restart || (cdcp.x = parse_triplet(cdcp.x, sub, sup, aux))
 	solve!(cdcp)
-	# Translate result
-	_invert_state!(sub, sup, aux, cdcp.x)
+	# translate result
+	invert_state!(sub, sup, aux, cdcp.x)
 	return sup
 end
 
@@ -98,7 +98,7 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 			resize!(intervalchoices, length(working))
 			resize!(squeezing, length(working))
 			for (i, v) in enumerate(working)
-				intervalchoices[i] = IntervalChoice(v.l, v.r, _parse_triplet(intervalchoices[1].itemstates, v.sub, v.sup, v.aux))
+				intervalchoices[i] = IntervalChoice(v.l, v.r, parse_triplet(intervalchoices[1].itemstates, v.sub, v.sup, v.aux))
 				squeezing[i] = i
 			end
 			_initialized = true

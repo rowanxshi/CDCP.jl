@@ -42,17 +42,17 @@ function init_Objective(obj, S::Integer)
 	S = Int(S)
 	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
 	if obj isa Objective
-		obj = _clearfcall(obj)
+		obj = clearfcall(obj)
 		(length(obj.ℒ) == S) || throw(ArgumentError("length of obj.ℒ is not $S"))
 	else
-		ℒ = (S < _static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
+		ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
 		obj = Objective(obj, ℒ)
 	end
 	obj
 end
 
 # default threshold for determining whether SVector is used for a choice
-function _static_threshold()
+function static_threshold()
 	256
 end
 
@@ -64,7 +64,7 @@ Add `n` to the counter for function call for `obj`.
 function addfcall(obj::Objective, n=1)
 	Objective(obj.f, obj.ℒ, obj.fcall+n)
 end
-function _clearfcall(obj::Objective)
+function clearfcall(obj::Objective)
 	Objective(obj.f, obj.ℒ, 0)
 end
 
@@ -99,27 +99,6 @@ end
 	included
 	excluded
 	aux
-end
-
-function allundetermined!(itemstates)
-	if itemstates isa SVector
-		S = length(itemstates)
-		itemstates = _fillstate(SVector{S,ItemState}, undetermined)
-	else
-		fill!(itemstates, undetermined)
-	end
-	itemstates
-end
-function allundetermined(obj::Objective)
-	allundetermined(obj.ℒ)
-end
-function allundetermined(ℒ::AbstractVector)
-	S = length(ℒ)
-	if ℒ isa SVector
-		itemstates = _fillstate(SVector{S,ItemState}, undetermined)
-	else
-		itemstates = fill(undetermined, S)
-	end
 end
 
 """

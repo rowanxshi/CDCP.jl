@@ -23,8 +23,8 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	intervalchoices, matched = cdcp.solver.intervalchoices, cdcp.solver.matcheds[itask]
 	intervalchoice = intervalchoices[k]
 	sp = cdcp.solver.singlesolvers[itask]
-	itemstates_left = _solvesingle!(sp, intervalchoice.zleft, intervalchoice.itemstates)
-	itemstates_right = _solvesingle!(sp, intervalchoice.zright, intervalchoice.itemstates)
+	itemstates_left = solvesingle!(sp, intervalchoice.zleft, intervalchoice.itemstates)
+	itemstates_right = solvesingle!(sp, intervalchoice.zright, intervalchoice.itemstates)
 	if itemstates_left == itemstates_right
 		intervalchoices[k] = IntervalChoice(intervalchoice.zleft, intervalchoice.zright, itemstates_left)
 	else
@@ -34,7 +34,7 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	end
 end
 
-function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
+function solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
 	cdcp.state = inprogress
 	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
 	cdcp.x = itemstates
@@ -54,7 +54,7 @@ function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left
 		# ! TODO Rowan proof double-check
 		if zleft < zmiddle < zright # Additional cutoff points in between
 			itemstates0 = cdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
-			itemstates_new = _solvesingle!(cdcp, zmiddle, itemstates0)
+			itemstates_new = solvesingle!(cdcp, zmiddle, itemstates0)
 			if itemstates_new == itemstates_left || itemstates_new == itemstates_right
 				push!(matched, IntervalChoice(zleft, zmiddle, itemstates_left), IntervalChoice(zmiddle, zright, itemstates_right))
 				if zright != zright0 # Move to the interval on the right
@@ -100,7 +100,7 @@ end
 
 function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
 	intervalchoices = cdcp.solver.intervalchoices
-	sort!(intervalchoices, by=_lb)
+	sort!(intervalchoices, by=(intervalchoice->getproperty(intervalchoice, :zleft)))
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
 	itemstates_s = resize!(cdcp.x.itemstates_s, 1)
 	cutoffs[1] = intervalchoices[1].zleft

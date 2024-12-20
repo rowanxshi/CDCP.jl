@@ -14,8 +14,8 @@ end
 
 function branch(itemstates::AbstractVector{ItemState}, k::Int)
 	# All aux are turned into undertermined
-	k_in = _squeeze(itemstates, included, k)
+	k_in = squeeze(itemstates, included, k)
 	# copy is here only in case itemstates is not SVector
-	k_out = _squeeze(copy(itemstates), excluded, k)
+	k_out = squeeze(copy(itemstates), excluded, k)
 	return k_in, k_out
 end
