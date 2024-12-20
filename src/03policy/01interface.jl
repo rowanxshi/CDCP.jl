@@ -27,8 +27,8 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
-	A = eltype(policy0.itemstates_s)
-	matcheds = [IntervalChoice{Z,A}[] for _ in 1:ntasks]
+	V = eltype(policy0.itemstates_s)
+	matcheds = [IntervalChoice{Z,V}[] for _ in 1:ntasks]
 	singlesolvers = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
 	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
 end

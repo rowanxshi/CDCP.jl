@@ -1,7 +1,7 @@
-struct IntervalChoice{Z,A<:AbstractVector{ItemState}}# <: AbstractVector{ItemState}
+struct IntervalChoice{Z,V<:AbstractVector{ItemState}}
 	zleft::Z
 	zright::Z
-	itemstates::A
+	itemstates::V
 end
 function Base.size(intervalchoice::IntervalChoice)
 	size(intervalchoice.itemstates)
@@ -10,9 +10,9 @@ Base.@propagate_inbounds function Base.getindex(intervalchoice::IntervalChoice, 
 	intervalchoice.itemstates[i]
 end
 
-struct Policy{Z,A} <: AbstractVector{IntervalChoice{Z,A}}
+struct Policy{Z,V <: AbstractVector{ItemState}} <: AbstractVector{IntervalChoice{Z,V}}
 	cutoffs::Vector{Z}
-	itemstates_s::Vector{A}
+	itemstates_s::Vector{V}
 	zright::Z
 end
 function Policy(obj::Objective, zbounds; itemstates=allundetermined(obj))
@@ -43,8 +43,8 @@ struct Default_Zero_Margin{F, O, D <: AbstractDict}
 	obj2::O
 	memo::D
 end
-function Default_Zero_Margin(equal_obj, obj2::Objective{<: Any, A}, ::Z) where {A, Z <: Real}
-	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,A},Z}())
+function Default_Zero_Margin(equal_obj, obj2::Objective{<: Any, V}, ::Z) where {V, Z <: Real}
+	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,V},Z}())
 end
 function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	# the order of true and false matters in case there is no interior solution
@@ -61,15 +61,15 @@ function reinit!(zm::Default_Zero_Margin)
 	empty!(zm.memo)
 end
 
-function ℒ!(obj::Objective{<:Any, A}, ℒ::A) where A<:SVector
+function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V<:SVector
 	Objective(obj.f, ℒ, obj.fcall)
 end
-function ℒ!(obj::Objective{<:Any, A}, ℒ::A) where A
+function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V
 	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
 end
 
 """
-    SqueezingPolicy{Z,A,F1,F2,S,O} <: CDCPSolver
+    SqueezingPolicy{Z,V <: AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 
 A type for solving a [`CDCProblem`](@ref) with a policy method as in Arkolakis, Eckert and Shi (2023).
 
@@ -95,14 +95,14 @@ Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the u
 	`equal_obj` or `zero_margin` should return `NaN` but not `nothing`.
 	This requirement is a breaking change from earlier implementation.
 """
-struct SqueezingPolicy{Z,A,F1,F2,S,O} <: CDCPSolver
+struct SqueezingPolicy{Z,V <: AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	scdca::Bool
-	intervalchoices::Vector{IntervalChoice{Z,A}}
+	intervalchoices::Vector{IntervalChoice{Z,V}}
 	squeezing_indices::Vector{Int}
 	branching_indices::Vector{Int}
 	zero_margin::F1
 	equal_obj::F2
-	matcheds::Vector{Vector{IntervalChoice{Z,A}}}
+	matcheds::Vector{Vector{IntervalChoice{Z,V}}}
 	singlesolvers::Vector{S}
 	obj2::O
 	nobranching::Bool

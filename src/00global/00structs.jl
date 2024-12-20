@@ -6,7 +6,7 @@ Abstract type for all solution algorithms for a [`CDCProblem`](@ref).
 abstract type CDCPSolver end
 
 """
-    Objective{F,A}
+    Objective{F,V <: AbstractVector}
 
 A wrapped objective function for solving a [`CDCProblem`](@ref). This facilitates maintaining an internal interface for dealing with objective functions that is independent from user interface.
 
@@ -17,9 +17,9 @@ Users are *not* required to construct `Objective` unless there is a need for fin
 
 Construct an instance of `Objective` with objective function `f` and an input vector `ℒ`. `f` must always accept `ℒ` as the first argument and may additionally accept an optional argument `z` for parameter (e.g., productivity).
 """
-struct Objective{F,A}
+struct Objective{F,V <: AbstractVector}
 	f::F
-	ℒ::A
+	ℒ::V
 	fcall::Int
 end
 
@@ -27,7 +27,7 @@ function Objective(f, ℒ)
 	Objective(f, ℒ, 0)
 end
 
-function setℒ(obj::Objective{<:Any,A}, ℒ::A) where A
+function setℒ(obj::Objective{<:Any,V}, ℒ::V) where V
 	Objective(obj.f, ℒ, obj.fcall)
 end
 
@@ -102,14 +102,14 @@ end
 end
 
 """
-    CDCProblem{M<:CDCPSolver, O<:Objective, A, F<:AbstractFloat}
+    CDCProblem{M<:CDCPSolver, O<:Objective, T, F<:AbstractFloat}
 
 Results from solving a combinatorial discrete choice problem. When a solution is attained, it can be retrieved from the field `x`.
 """
-mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, A, F<:AbstractFloat}
+mutable struct CDCProblem{M<:CDCPSolver, O<:Objective, T, F<:AbstractFloat}
 	solver::M
 	obj::O
-	x::A
+	x::T
 	value::F
 	state::SolverState
 end

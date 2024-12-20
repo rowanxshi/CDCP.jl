@@ -7,8 +7,8 @@ end
 
 function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs...)
 	itemstates = allundetermined(obj)
-	A = typeof(itemstates)
-	return Squeezing(scdca, A[], z), itemstates
+	V = typeof(itemstates)
+	return Squeezing(scdca, V[], z), itemstates
 end
 
 function reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp.solver.z)
