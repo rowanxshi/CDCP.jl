@@ -1,5 +1,5 @@
 function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
-	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching, cdcp.solver.matcheds
+	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching_indices, cdcp.solver.matcheds
 	ntasks = length(matcheds)
 	for m in matcheds
 		empty!(m) # Just to be safe
@@ -23,57 +23,60 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
 	intervalchoices, matched = cdcp.solver.intervalchoices, cdcp.solver.matcheds[itask]
 	intervalchoice = intervalchoices[k]
 	sp = cdcp.solver.singlesolvers[itask]
-	itemstates_left = _solvesingle!(sp, intervalchoice.lb, intervalchoice.itemstates)
-	itemstates_right = _solvesingle!(sp, intervalchoice.ub, intervalchoice.itemstates)
+	itemstates_left = solvesingle!(sp, intervalchoice.zleft, intervalchoice.itemstates)
+	itemstates_right = solvesingle!(sp, intervalchoice.zright, intervalchoice.itemstates)
 	if itemstates_left == itemstates_right
-		intervalchoices[k] = IntervalChoice(intervalchoice.lb, intervalchoice.ub, itemstates_left)
+		intervalchoices[k] = IntervalChoice(intervalchoice.zleft, intervalchoice.zright, itemstates_left)
 	else
-		search!(sp, matched, intervalchoice.lb, itemstates_left, intervalchoice.ub, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
+		search!(sp, matched, intervalchoice.zleft, itemstates_left, intervalchoice.zright, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
 		# Overwrite the old interval with aux
 		intervalchoices[k] = pop!(matched)
 	end
 end
 
-function _solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates0)
-	_reset!(cdcp, z, itemstates0)
+function solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
+	cdcp.state = inprogress
+	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
+	cdcp.x = itemstates
+	cdcp.value = -Inf
 	solve!(cdcp)
-	cdcp.state == success || error("single-agenet solver fails with z = ", cdcp.solver.z)
+	cdcp.state == success || error("single-agent solver fails with z = ", cdcp.solver.z)
 	return cdcp.x
 end
 
-function search!(cdcp::CDCProblem{<:Squeezing}, matched, z_left0, itemstates_left0, z_right0, itemstates_right0, itemstates0, obj2, equal_obj)
-	z_left, itemstates_left, z_right, itemstates_right = z_left0, itemstates_left0, z_right0, itemstates_right0
+function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left0, zright0, itemstates_right0, itemstates0, obj2, equal_obj)
+	zleft, itemstates_left, zright, itemstates_right = zleft0, itemstates_left0, zright0, itemstates_right0
 	while true
 		# itemstates_left and itemstates_right should always be different here
-		obj1 = _setchoice(cdcp.obj, setsub(itemstates_left))
-		obj2 = _setchoice(obj2, setsub(itemstates_right))
-		z_middle, _ = equal_obj(obj1, obj2, z_left, z_right)
+		obj1 = setℒ(cdcp.obj, to_sub(itemstates_left))
+		obj2 = setℒ(obj2, to_sub(itemstates_right))
+		zmiddle, _ = equal_obj(obj1, obj2, zleft, zright)
 		# ! TODO Rowan proof double-check
-		if z_left < z_middle < z_right # Additional cutoff points in between
+		if zleft < zmiddle < zright # Additional cutoff points in between
 			itemstates0 = cdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
-			itemstates_new = _solvesingle!(cdcp, z_middle, itemstates0)
+			itemstates_new = solvesingle!(cdcp, zmiddle, itemstates0)
 			if itemstates_new == itemstates_left || itemstates_new == itemstates_right
-				push!(matched, IntervalChoice(z_left, z_middle, itemstates_left), IntervalChoice(z_middle, z_right, itemstates_right))
-				if z_right != z_right0 # Move to the interval on the right
-					z_left, itemstates_left = z_right, itemstates_right
-					z_right, itemstates_right = z_right0, itemstates_right0
+				push!(matched, IntervalChoice(zleft, zmiddle, itemstates_left), IntervalChoice(zmiddle, zright, itemstates_right))
+				if zright != zright0 # Move to the interval on the right
+					zleft, itemstates_left = zright, itemstates_right
+					zright, itemstates_right = zright0, itemstates_right0
 				else
 					return
 				end
 			else # More cutoff points on the left
-				z_right, itemstates_right = z_middle, itemstates_new
+				zright, itemstates_right = zmiddle, itemstates_new
 			end
 		else # No split of interval
-			if z_middle == z_left
-				push!(matched, IntervalChoice(z_left, z_right, itemstates_right))
-			elseif z_middle == z_right
-				push!(matched, IntervalChoice(z_left, z_right, itemstates_left))
+			if zmiddle == zleft
+				push!(matched, IntervalChoice(zleft, zright, itemstates_right))
+			elseif zmiddle == zright
+				push!(matched, IntervalChoice(zleft, zright, itemstates_left))
 			else
 				error("z is not in between")
 			end
-			if z_right != z_right0 # Move to the interval on the right
-				z_left, itemstates_left = z_right, itemstates_right
-				z_right, itemstates_right = z_right0, itemstates_right0
+			if zright != zright0 # Move to the interval on the right
+				zleft, itemstates_left = zright, itemstates_right
+				zright, itemstates_right = zright0, itemstates_right0
 			else
 				return
 			end
@@ -97,15 +100,15 @@ end
 
 function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
 	intervalchoices = cdcp.solver.intervalchoices
-	sort!(intervalchoices, by=_lb)
+	sort!(intervalchoices, by=(intervalchoice->getproperty(intervalchoice, :zleft)))
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
 	itemstates_s = resize!(cdcp.x.itemstates_s, 1)
-	cutoffs[1] = intervalchoices[1].lb
+	cutoffs[1] = intervalchoices[1].zleft
 	itemstates_s[1] = itemstates_last = intervalchoices[1].itemstates
 	for intervalchoice in intervalchoices
 		# Filter out potential singletons
-		if intervalchoice.lb < intervalchoice.ub && intervalchoice.itemstates != itemstates_last
-			push!(cutoffs, intervalchoice.lb)
+		if intervalchoice.zleft < intervalchoice.zright && intervalchoice.itemstates != itemstates_last
+			push!(cutoffs, intervalchoice.zleft)
 			push!(itemstates_s, intervalchoice.itemstates)
 			itemstates_last = intervalchoice.itemstates
 		end

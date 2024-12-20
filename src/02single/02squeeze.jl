@@ -1,102 +1,111 @@
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState})
-	S = length(itemstates)
 	value = -Inf
 	lastaux = nothing
-	i = findfirst(==(undetermined), itemstates)
-	if i === nothing
-		lastaux = findfirst(==(aux), itemstates) # May find aux from initial value
-		if lastaux === nothing # Last value set by branching
+
+	i = next_undetermined(itemstates)
+	if isnothing(i)
+		lastaux = findfirst(==(aux), itemstates)
+		if isnothing(lastaux)
 			value, obj = cdcp.obj(cdcp.solver.z)
 			cdcp.obj = obj
 		end
 	end
-	while i !== nothing && cdcp.obj.fcall < cdcp.maxfcall
+	while !isnothing(i)
 		itemstates, value, itemstate = squeeze!(cdcp, itemstates, i)
 		if itemstate == aux
-			lastaux = lastaux === nothing ? i : min(lastaux, i)
+			lastaux = isnothing(lastaux) ? i : min(lastaux, i)
 		else
 			lastaux = nothing
 		end
-		#lastaux = ifelse(itemstate == aux, i, nothing)
-		if i < S
-			i = findnext(==(undetermined), itemstates, i+1)
-			i === nothing && (i = findfirst(==(undetermined), itemstates))
-		else
-			i = findfirst(==(undetermined), itemstates)
-		end
+		i = next_undetermined(itemstates, i)
 	end
-	# Whenever squeeze! makes progress, any aux is changed to undetermined
-	# If aux is in itemstates, it can only be that lastaux !== nothing
-	if lastaux === nothing
-		state = cdcp.obj.fcall < cdcp.maxfcall ? success : maxfcall_reached
+
+	if isnothing(lastaux)
+		cdcpstate = success
 	else
+		cdcpstate = inprogress
 		push!(cdcp.solver.branching, branch(itemstates, lastaux)...)
-		state = inprogress
 	end
-	return itemstates, value, state
+	return itemstates, value, cdcpstate
 end
 
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
-	obj, scdca, z = cdcp.obj, cdcp.solver.scdca, cdcp.solver.z
-	# For excluding: look at the best case
-	if scdca
-		obj = _setchoice(obj, setsub(itemstates))
-		f1, f0, obj = margin(obj, i, z)
-		exclude = f1 - f0 <= 0
-	else
-		obj = _setchoice(obj, setsup(itemstates))
-		f1, f0, obj = margin(obj, i, z)
-		exclude = f1 - f0 < 0
-	end
+	# check exclude
+	exclude, obj, value0 = isexcluded(cdcp, itemstates, i)	
 	if exclude
-		itemstates_new = _squeeze(itemstates, excluded, i)
+		itemstates_new = squeeze(itemstates, excluded, i)
 		cdcp.obj = obj
-		return itemstates_new, f0, excluded
+		return itemstates_new, value0, excluded
 	end
-
-	# For including: look at the worst case
-	if scdca
-		obj = _setchoice(obj, setsup(itemstates))
-		f1, f0, obj = margin(obj, i, z)
-		include = f1 - f0 > 0
-	else
-		obj = _setchoice(obj, setsub(itemstates))
-		f1, f0, obj = margin(obj, i, z)
-		include = f1 - f0 >= 0
-	end
+	# check include
+	include, obj, value1 = isincluded(cdcp, itemstates, i)
 	if include
-		itemstates_new = _squeeze(itemstates, included, i)
+		itemstates_new = squeeze(itemstates, included, i)
 		cdcp.obj = obj
-		return itemstates_new, f1, included
+		return itemstates_new, value1, included
 	end
-
-	itemstates_new = _setitemstate(itemstates, aux, i)
+	# no progress
 	value = convert(typeof(cdcp.value), -Inf)
-	cdcp.obj = obj
-	return itemstates_new, value, aux
+	begin
+		itemstates_new = setindex(itemstates, aux, i)
+		cdcp.obj = obj
+		return itemstates_new, value, aux
+	end
 end
 
-function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S
+function isexcluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
+	obj, z = cdcp.obj, cdcp.solver.z
+	if cdcp.solver.scdca
+		sub = to_sub(itemstates)
+		obj = setℒ(obj, sub)
+		value1, value0, obj = margin(obj, i, z)
+		exclude = (value1 - value0 <= 0)
+	else
+		sup = to_sup(itemstates)
+		obj = setℒ(obj, sup)
+		value1, value0, obj = margin(obj, i, z)
+		exclude = (value1 - value0 < 0)
+	end
+	exclude, obj, value0
+end
+
+function isincluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
+	obj, z = cdcp.obj, cdcp.solver.z
+	if cdcp.solver.scdca
+		sup = to_sup(itemstates)
+		obj = setℒ(obj, sup)
+		value1, value0, obj = margin(obj, i, z)
+		include = (value1 - value0 > 0)
+	else
+		sub = to_sub(itemstates)
+		obj = setℒ(obj, sub)
+		value1, value0, obj = margin(obj, i, z)
+		include = (value1 - value0 >= 0)
+	end
+	return include, obj, value1
+end
+
+function squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int) where S
 	if @generated
 		ex = :(())
 		for i in 1:S
-			push!(ex.args, :(_squeeze(itemstates, s, k, $i)))
+			push!(ex.args, :(squeeze(itemstates, s, k, $i)))
 		end
 		return :(SVector{S,ItemState}($ex))
 	else
-		return SVector{S,ItemState}(ntuple(i->_squeeze(itemstates, s, k, i), S))
+		return SVector{S,ItemState}(ntuple(i->squeeze(itemstates, s, k, i), S))
 	end
 end
 
-function _squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
+function squeeze(itemstates::SVector{S,ItemState}, s::ItemState, k::Int, i::Int) where S
 	if i == k
 		return s
 	else
-		@inbounds itemstatesi = itemstates[i]
-		if itemstatesi == aux
+		@inbounds itemstates_i = itemstates[i]
+		if itemstates_i == aux
 			return undetermined
 		else
-			return itemstatesi
+			return itemstates_i
 		end
 	end
 end

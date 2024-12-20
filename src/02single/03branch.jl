@@ -3,20 +3,19 @@ function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
 	while !isempty(branching)
 		itemstates = pop!(branching)
 		itemstates, value, state = squeeze!(cdcp, itemstates)
-		if state == success
-			value > cdcp.value && (cdcp.x = itemstates; cdcp.value = value)
-		elseif state == maxfcall_reached
-			push!(branching, itemstates) # Put itemstates back
-			return maxfcall_reached
+		if (state == success) && (value > cdcp.value)
+			cdcp.x = itemstates
+			cdcp.value = value
 		end
 	end
-	return success
+	cdcp.state = success
+	cdcp
 end
 
 function branch(itemstates::AbstractVector{ItemState}, k::Int)
 	# All aux are turned into undertermined
-	itemstates_in = _squeeze(itemstates, included, k)
+	k_in = squeeze(itemstates, included, k)
 	# copy is here only in case itemstates is not SVector
-	itemstates_ex = _squeeze(copy(itemstates), excluded, k)
-	return itemstates_in, itemstates_ex
+	k_out = squeeze(copy(itemstates), excluded, k)
+	return k_in, k_out
 end

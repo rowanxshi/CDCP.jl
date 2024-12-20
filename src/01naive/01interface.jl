@@ -1,7 +1,11 @@
-function _init(::Type{Naive}, obj, args...; z=nothing, kwargs...)
-	Naive([0], z), copy(obj.ℒ)
+function init_solverx(::Type{Naive}, obj, args...; z=nothing, kwargs...)
+	solver = Naive([0], z)
+	x = copy(obj.ℒ)
+	solver, x
 end
 
-function _setchoice(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int})
-	(fill!(obj.ℒ, false); fill!(view(obj.ℒ, ids), true); obj)
+function setℒ(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int})
+	fill!(obj.ℒ, false)
+	fill!(view(obj.ℒ, ids), true)
+	obj
 end

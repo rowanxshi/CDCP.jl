@@ -5,6 +5,8 @@ See [here](https://github.com/rowanxshi/CDCP.jl) for more.
 module CombinatorialDiscreteChoiceProblems
 
 using Base: RefValue
+
+import StaticArrays
 using StaticArrays: SVector, setindex
 
 import CommonSolve: init, solve!, solve
