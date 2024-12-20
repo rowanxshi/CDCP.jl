@@ -38,17 +38,17 @@ function StaticArrays.setindex(obj::Objective, value, index) # fallback method a
 	Objective(obj.f, setindex!(obj.ℒ, value, index), obj.fcall)
 end
 
+function init_Objective(obj::Objective, S::Integer)
+	S = Int(S)
+	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
+	(length(obj.ℒ) == S) || throw(ArgumentError("length of obj.ℒ is not $S"))
+	obj = clearfcall(obj)
+end
 function init_Objective(obj, S::Integer)
 	S = Int(S)
 	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
-	if obj isa Objective
-		obj = clearfcall(obj)
-		(length(obj.ℒ) == S) || throw(ArgumentError("length of obj.ℒ is not $S"))
-	else
-		ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
-		obj = Objective(obj, ℒ)
-	end
-	obj
+	ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
+	Objective(obj, ℒ)
 end
 
 # default threshold for determining whether SVector is used for a choice

@@ -9,35 +9,30 @@ For details on usage, see [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Na
 
 An in-place version [`solve!`](@ref) can be used when a `CDCProblem` is preallocated.
 """
-function solve(::Type{M}, args...; kwargs...) where M<:CDCPSolver
-	solve!(init(M, args...; kwargs...))
+function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolver
+	solve!(init(Algorithm, args...; kwargs...))
 end
 
-function init(::Type{M}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...) where M<:CDCPSolver
+function init(::Type{Algorithm}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...) where Algorithm <: CDCPSolver
 	obj = init_Objective(obj, S)
-	solver, x = init_solverx(M, obj, args...; kwargs...)
+	solver, x = init_solverx(Algorithm, obj, args...; kwargs...)
 	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
 
-function allundetermined!(itemstates)
-	if itemstates isa SVector
-		S = length(itemstates)
-		itemstates = fillstate(SVector{S,ItemState}, undetermined)
-	else
-		fill!(itemstates, undetermined)
-	end
-	itemstates
+function allundetermined!(itemstates::SVector)
+	allundetermined(itemstates)
+end
+function allundetermined!(itemstates::AbstractVector)
+	fill!(itemstates, undetermined)
 end
 function allundetermined(obj::Objective)
 	allundetermined(obj.ℒ)
 end
+function allundetermined(::SVector{S}) where S
+	fillstate(SVector{S,ItemState}, undetermined)
+end
 function allundetermined(ℒ::AbstractVector)
-	S = length(ℒ)
-	if ℒ isa SVector
-		itemstates = fillstate(SVector{S,ItemState}, undetermined)
-	else
-		itemstates = fill(undetermined, S)
-	end
+	fill(undetermined, length(ℒ))
 end
 
 function fillstate(::Type{<:SVector{S}}, s::ItemState) where S
