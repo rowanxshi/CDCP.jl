@@ -1,9 +1,7 @@
 """
     naive(C::Integer; obj)
 
-Solve a combinatorial discrete choice problem over `C` choices with exhaustion. (Generally used for testing or time-trial exercises.) The solver an objective function `π(J)`.
-
-See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
+Solve a combinatorial discrete choice problem with objective function `π(J)` over `C` choices with exhaustion.
 
 !!! warning
 
@@ -13,40 +11,37 @@ See also: [`naive!`](@ref), [`solve!`](@ref), [`policy`](@ref)
 function naive(C::Integer; obj, z=nothing)
 	naive!(falses(C); obj, z)
 end
-
-function naive!(J::AbstractVector{Bool}; obj, z=nothing)
+function naive!(J::AbstractVector{Bool}; obj)
 	Base.depwarn("Consider the new interface for solution with exhaustion using the problem with `Naive`", :naive!)
 	C = length(J)
-	wobj = Objective(obj, copy(J))
-	cdcp = solve(Naive, wobj, C; z=z)
+	wrapped_obj = Objective(obj, copy(J))
+	cdcp = solve(Naive, wrapped_obj, C)
 	copyto!(J, cdcp.x)
 end
 
 """
-    solve(C::Integer; scdca::Bool, obj, [; containers])
+    solve(C::Integer; scdca::Bool, obj)
 
-Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below). The solver uses the objective function `obj(J)` which must accept as argument a Boolean vector with length corresponding to the number of items in the problem.
+Solve a combinatorial discrete choice problem over `C` choices with SCD-C from above if `scdca` is `true` (otherwise, from below).
 
-See also: [`solve!`](@ref), [`policy`](@ref)
+The solver uses the objective function `obj(J)` which must accept as argument a Boolean vector of length `C`.
 
 !!! warning
 
 	This method exists only for the sake of backward compatibility.
 	Future use should prefer the interface based on `solve(Squeezing, ...)`.
 """
-function solve(C::Integer; obj, kwargs...)
-	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
-	return solve(Squeezing, wobj, scdca; z=z, restart=restart)
+function solve(C::Integer; scdca::Bool, obj)
+	wrapped_obj = Objective(obj, SVector{C,Bool}(trues(C)))
+	return solve(Squeezing, wrapped_obj, scdca)
 end
-
-function solve!((sub, sup, aux); scdca::Bool, obj, D_j_obj = nothing, containers = nothing, restart::Bool = true, z=nothing, kwargs...)
+function solve!((sub, sup, aux); scdca::Bool, obj, restart::Bool=true, kwargs...)
 	Base.depwarn("Consider the new interface for solving the single-agent problem with `Squeezing`", :solve!)
-	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
 	C = length(sub)
-	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
-	cdcp = init(Squeezing, wobj, C, scdca; z=z, restart=restart)
+	wrapped_obj = Objective(obj, SVector{C,Bool}(trues(C)))
+	cdcp = init(Squeezing, wrapped_obj, C, scdca)
 	# allow setting initial choice by (sub, sup, aux)
-	restart || (cdcp.x = parse_triplet(cdcp.x, sub, sup, aux))
+	restart || (cdcp.x = invert_triplet(cdcp.x, sub, sup, aux))
 	solve!(cdcp)
 	# translate result
 	invert_state!(sub, sup, aux, cdcp.x)
@@ -71,56 +66,21 @@ function policy(C::Integer; kwargs...)
 	working = Vector{Interval{BitVector, Float64}}(undef, 0)
 	converged = similar(working)
 	done = similar(working)
-	policy!(nothing, (working, converged, done), C; kwargs...)
+	cutoffs = Float64[-Inf, Inf]
+	policies = Union{Nothing, BitVector}[]
+	policy!((cutoffs, policies), (working, converged, done), C; kwargs...)
 end
-
-# D_j_obj is not used and hence ignored
-function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equalise_obj, D_j_obj=nothing, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, emptyset = falses(C), restart::Bool = true, ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), kwargs...)
+function policy!((cutoffs, policies), containers, C::Integer; scdca::Bool, obj, equalise_obj, zero_D_j_obj = zero_D_j(equalise_obj, falses(C)), show_time::Bool = false, restart::Bool = true, singlekw=NamedTuple(), kwargs...)
 	Base.depwarn("Consider the new interface for solving the policy problem with `SqueezingPolicy`", :policy!)
 
-	D_j_obj===nothing || @warn "D_j_obj doesn't need to be specified explicitly"
-
 	restart && restart!(containers, C)
-
-	weq_obj = Wrapped_Equalise_Obj(equalise_obj)
-	wobj = Objective(obj, SVector{C,Bool}(trues(C)))
-	wzero_dj = Wrapped_Zero_D_j_Obj(zero_D_j_obj, fill(false, C))
-
-	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, nobranching=nobranching, singlekw=singlekw, kwargs...)
-
-	intervalchoices, squeezing = cdcp.solver.intervalchoices, cdcp.solver.squeezing_indices
-
-	# Handle initial choices passed via (cutoffs, policies)
-	_initialized = false
-	if containers !== nothing
-		working, converged, done = containers
-		if !isempty(working)
-			resize!(intervalchoices, length(working))
-			resize!(squeezing, length(working))
-			for (i, v) in enumerate(working)
-				intervalchoices[i] = IntervalChoice(v.l, v.r, parse_triplet(intervalchoices[1].itemstates, v.sub, v.sup, v.aux))
-				squeezing[i] = i
-			end
-			_initialized = true
-		end
-	end
-	policies = Union{Nothing, BitVector}[]
-	cutoffs = Float64[-Inf, Inf]
-	if cutoffspolicies !== nothing
-		if !_initialized
-			cutoffs, policies = cutoffspolicies
-			resize!(intervalchoices, length(policies))
-			resize!(squeezing, length(policies))
-			for i in 1:length(policies)
-				intervalchoices[i] = IntervalChoice(cutoffs[i], cutoffs[i+1], policies[i])
-				squeezing[i] = i
-			end
-		end  
-	end
+	wrapped_eq_obj = Wrapped_Equalise_Obj(equalise_obj)
+	wrapped_obj = Objective(obj, SVector{C,Bool}(trues(C)))
+	wrapped_zero_dj = Wrapped_Zero_D_j_Obj(zero_D_j_obj, fill(false, C))
+	cdcp = init(SqueezingPolicy, wrapped_obj, C, scdca, wrapped_eq_obj; zero_margin=wrapped_zero_dj, singlekw, kwargs...)
+	invert_cutoffspolicies!(cdcp, containers) # handle initial choices passed via containers
 
 	solve!(cdcp)
-
-	# Copy results back
 	resize!(cutoffs, length(cdcp.x.cutoffs)+1)
 	copyto!(cutoffs, cdcp.x.cutoffs)
 	cutoffs[end] = cdcp.x.zright

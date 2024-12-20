@@ -78,7 +78,7 @@ end
 """
     margin(obj::Objective, i::Int, z)
 
-Evalutate the change in `obj` with optional parameter `z` when the `i`th item is included or not. This corresponds to the `D_j` function in earlier implementation.
+Evaluate the change in `obj` with optional parameter `z` when the `i`th item is included or not. This corresponds to the `D_j` function in earlier implementation.
 """
 function margin(obj::Objective, i::Int, z)
 	obj = setindex(obj, true, i)

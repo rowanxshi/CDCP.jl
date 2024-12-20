@@ -52,8 +52,8 @@ function coincide(C::Int, scdca::Bool = false; seed::Int = 10)
 	
 	z_wrong = nothing
 	coincide = all(0.01:0.1:50) do z
-		CDCP.naive!(J; cdcp.obj, z)
-		CDCP.solve!(Vs; cdcp.scdca, cdcp.obj, z)
+		CDCP.naive!(J; obj=(J->cdcp.obj(J, z)))
+		CDCP.solve!(Vs; cdcp.scdca, obj=(J->cdcp.obj(J, z)))
 
 		interval = searchsortedfirst(cutoffs, z)-1
 		

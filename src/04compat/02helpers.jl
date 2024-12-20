@@ -1,3 +1,8 @@
+function containers(Vs)
+	working = [Vs; ]
+	converged = similar(working)
+	(working, converged)
+end
 function containers(C::Integer)
 	sub = falses(C)
 	sup = trues(C)
@@ -5,17 +10,19 @@ function containers(C::Integer)
 	return (sub, sup, aux)
 end
 
-function containers(Vs)
-	working = [Vs; ]
-	converged = similar(working)
-	(working, converged)
+function invert_triplet(itemstates::SVector{S,ItemState}, sub, sup, aux) where S
+	checklength(itemstates, sub, sup, aux)
+	if @generated
+		ex = :(())
+		for i in 1:S
+			push!(ex.args, :(ItemState( @inbounds(sub[$i]), @inbounds(sup[$i]), @inbounds(aux[$i]))))
+		end
+		return :(SVector{S,ItemState}($ex))
+	else
+		return SVector{S,ItemState}(ntuple(i->ItemState(sub[i], sup[i], aux[i]), S))
+	end
 end
-
-function checklength(::SVector{S,ItemState}, sub, sup, aux) where S
-	length(sub) == length(sup) == length(aux) == S || throw(ArgumentError("length of sub, sup, aux are inconsistent with C"))
-end
-
-function parse_state(sub::Bool, sup::Bool, isaux::Bool)
+function ItemState(sub::Bool, sup::Bool, isaux::Bool)
 	if isaux
 		return aux
 	elseif sub != sup
@@ -26,23 +33,11 @@ function parse_state(sub::Bool, sup::Bool, isaux::Bool)
 		return excluded
 	end
 end
-
-function parse_triplet(itemstates::SVector{S,ItemState}, sub, sup, aux) where S
-	if @generated
-		ex = :(())
-		for i in 1:S
-			push!(ex.args, :(parse_state(
-				@inbounds(sub[$i]), @inbounds(sup[$i]), @inbounds(aux[$i]))))
-		end
-		return :(checklength(itemstates, sub, sup, aux); SVector{S,ItemState}($ex))
-	else
-		checklength(itemstates, sub, sup, aux)
-		return SVector{S,ItemState}(ntuple(i->parse_state(sub[i], sup[i], aux[i]), S))
-	end
+function checklength(::SVector{S,ItemState}, sub, sup, aux) where S
+	length(sub) == length(sup) == length(aux) == S || throw(ArgumentError("length of sub, sup, aux are inconsistent with C"))
 end
 
-function invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool},
-		isaux::AbstractVector{Bool}, itemstates::SVector{S,ItemState}) where S
+function invert_state!(sub::AbstractVector{Bool}, sup::AbstractVector{Bool}, isaux::AbstractVector{Bool}, itemstates::SVector{S,ItemState}) where S
 	@inbounds for i in 1:S
 		itemstate = itemstates[i]
 		if itemstate == aux
@@ -77,3 +72,28 @@ function restart!((working, converged, done), C)
 	push!(working, int)
 end
 
+function invert_cutoffspolicies!(cdcp::CDCProblem{<: SqueezingPolicy}, containers)
+	intervalchoices, squeezing = cdcp.solver.intervalchoices, cdcp.solver.squeezing_indices
+	itemstates = first(intervalchoices).itemstates
+	working = first(containers)
+	if !isempty(working)
+		resize!(intervalchoices, length(working))
+		resize!(squeezing, length(working))
+		for (i, interval) in enumerate(working)
+			intervalchoices[i] = IntervalChoice(interval.l, interval.r, invert_triplet(itemstates, interval.sub, interval.sup, interval.aux))
+			squeezing[i] = i
+		end
+	end
+	# if cutoffspolicies !== nothing
+	# 	if !initialized
+	# 		cutoffs, policies = cutoffspolicies
+	# 		resize!(intervalchoices, length(policies))
+	# 		resize!(squeezing, length(policies))
+	# 		for i in 1:length(policies)
+	# 			intervalchoices[i] = IntervalChoice(cutoffs[i], cutoffs[i+1], policies[i])
+	# 			squeezing[i] = i
+	# 		end
+	# 	end  
+	# end
+	cdcp
+end
