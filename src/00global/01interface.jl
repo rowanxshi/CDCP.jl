@@ -1,13 +1,50 @@
 """
-    solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}; kwargs...)
-    solve(Squeezing, obj, scdca::Bool; kwargs...)
-    solve(Naive, obj; kwargs...)
+    solve(Algorithm::CDCPSolver, obj, args...; kwargs...) = cdcp::CDCProblem
 
 Solve a combinatorial discrete choice problem with a given solution algorithm that can be [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref). Results are returned as a [`CDCProblem`](@ref).
 
-For details on usage, see [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref) respectively.
+The objective function `obj` should return the value evaluated at a choice vector `ℒ` with an optional parameter `z` that is typically a number (e.g. productivity).
 
-An in-place version [`solve!`](@ref) can be used when a `CDCProblem` is preallocated.
+`obj` must have a method of either `obj(ℒ)` (if no parameter is specified) or `obj(ℒ, z)` (if a parameter is specified). `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`.
+
+    solve(Squeezing, obj, scdca::Bool; z=nothing)
+
+The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`.
+
+Keywords
+===
+* `z=nothing`
+
+
+    solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
+
+The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`.
+
+The function `equal_obj` should returns the cutoff type `z` with `zleft <= z0 <= zright` that is indifferent between two decision sets `ℒ1` and `ℒ2`.
+
+`equal_obj` can be defined with one of the two following methods:
+* `equal_obj((ℒ1, ℒ2), zleft, zright)`: where the pair of input choices is accepted as a tuple
+* `equal_obj(obj1::Objective, obj2::Objective, zleft, zright)`: where `obj1` and `obj2` are the same objective function attached with different input vectors `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively
+
+`zbounds` determines the domain of the parameter `z`, which defaults to `(-Inf, Inf)`.
+
+Keywords
+===
+* `zero_margin=nothing`: a function that returns the type `z` that is indifferent to adding item `ℓ` to decision set `ℒ`; it should have the method `zero_margin(obj::Objective, ℓ::Int, zleft, zright)` with `ℒ` attached to `obj` and if not supplied, this function will be generated automatically from `equal_obj`
+* `policy0::Policy=Policy(obj, zbounds)`: initial policy which on top of which optimisation occurs
+* `ntasks=1`: Number of threads used in the branching process.
+* `nobranching::Bool=false`: skip the branching step
+* `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple` used in the branching stage.
+* `maxfcall=1_000_000_000`: maximum calls to the objective function
+
+
+    solve(Naive, obj; kwargs...)
+
+Solve with exhaustion by checking all potential decision sets. This method should be used with extreme caution.
+
+Keywords
+===
+* `z=nothing`: the type parameterising the problem
 """
 function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolver
 	solve!(init(Algorithm, args...; kwargs...))
