@@ -88,7 +88,7 @@ function policy!(cutoffspolicies, containers, C::Integer; scdca::Bool, obj, equa
 
 	cdcp = init(SqueezingPolicy, wobj, C, scdca, weq_obj, (-Inf, Inf); zero_margin=wzero_dj, ntasks=ntasks, nobranching=nobranching, singlekw=singlekw, kwargs...)
 
-	intervalchoices, squeezing = cdcp.solver.intervalchoices, cdcp.solver.squeezing
+	intervalchoices, squeezing = cdcp.solver.intervalchoices, cdcp.solver.squeezing_indices
 
 	# Handle initial choices passed via (cutoffs, policies)
 	_initialized = false

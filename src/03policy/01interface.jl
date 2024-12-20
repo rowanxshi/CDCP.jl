@@ -65,9 +65,9 @@ function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, eq
 	end
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = cdcp.x[1]
-	resize!(solver.squeezing, 1)
-	solver.squeezing[1] = 1
-	empty!(solver.branching)
+	resize!(solver.squeezing_indices, 1)
+	solver.squeezing_indices[1] = 1
+	empty!(solver.branching_indices)
 	for m in solver.matcheds
 		empty!(m)
 	end
@@ -75,6 +75,6 @@ function _reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, eq
 		s.obj = cdcp.obj
 		_reinit!(s; scdca=scdca)
 	end
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing, solver.branching, zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
 	return cdcp
 end

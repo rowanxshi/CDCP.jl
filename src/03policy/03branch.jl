@@ -1,5 +1,5 @@
 function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
-	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching, cdcp.solver.matcheds
+	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching_indices, cdcp.solver.matcheds
 	ntasks = length(matcheds)
 	for m in matcheds
 		empty!(m) # Just to be safe

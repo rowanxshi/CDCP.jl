@@ -1,6 +1,6 @@
 function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 	solver = cdcp.solver
-	squeezing, branching = solver.squeezing, solver.branching
+	squeezing, branching = solver.squeezing_indices, solver.branching_indices
 	while !isempty(squeezing)
 		k = pop!(squeezing)
 		intervalchoice = solver.intervalchoices[k]

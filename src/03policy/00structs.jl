@@ -101,8 +101,8 @@ Pass the type `SqueezingPolicy` as the first argument to `solve` indicates the u
 struct SqueezingPolicy{Z,A,F1,F2,S,O} <: CDCPSolver
 	scdca::Bool
 	intervalchoices::Vector{IntervalChoice{Z,A}}
-	squeezing::Vector{Int}
-	branching::Vector{Int}
+	squeezing_indices::Vector{Int}
+	branching_indices::Vector{Int}
 	zero_margin::F1
 	equal_obj::F2
 	matcheds::Vector{Vector{IntervalChoice{Z,A}}}
