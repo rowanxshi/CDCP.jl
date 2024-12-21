@@ -2,7 +2,7 @@ function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.s
 	restart && (cdcp = reinit!(cdcp; scdca, z))
 	cdcp.x, cdcp.value, cdcp.state = squeeze!(cdcp, cdcp.x)
 	(cdcp.state != success) && squeeze_branch!(cdcp)
-	cdcp
+	return cdcp
 end
 
 function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs...)

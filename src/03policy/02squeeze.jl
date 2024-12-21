@@ -8,8 +8,11 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 		if isnothing(i)
 			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching, k)
 		else
-			(cdcp.obj.fcall < cdcp.solver.maxfcall) || return maxfcall_reached
-			intervalchoices = squeeze!(cdcp, intervalchoice, i)
+			if (cdcp.obj.fcall ≥ cdcp.solver.maxfcall)
+				cdcp.state = maxfcall_reached
+				return cdcp
+			end
+			intervalchoices = squeeze(cdcp, intervalchoice, i)
 			solver.intervalchoices[k] = intervalchoices[1]
 			push!(squeezing, k)
 			for j in 2:length(intervalchoices)
@@ -18,26 +21,27 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 			end
 		end
 	end
-	return inprogress
+	cdcp.state = inprogress
+	return cdcp
 end
 
-function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
-	intervalchoices = squeeze_include!(cdcp, intervalchoice, i)
+function squeeze(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
+	intervalchoices = squeeze_include(cdcp, intervalchoice, i)
 	if isone(length(intervalchoices))
 		intervalchoice = first(intervalchoices)
 		if (intervalchoice.itemstates[i] == included)
 			return (intervalchoice, )
 		else
-			return squeeze_exclude!(cdcp, intervalchoice, i)
+			return squeeze_exclude(cdcp, intervalchoice, i)
 		end
 	else
 		intervalchoice_left, intervalchoice_right = intervalchoices
-		intervalchoices = squeeze_exclude!(cdcp, intervalchoice_left, i)
+		intervalchoices = squeeze_exclude(cdcp, intervalchoice_left, i)
 		return (intervalchoices..., intervalchoice_right)
 	end
 end
 
-function squeeze_include!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
+function squeeze_include(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
 	obj = setℒ(obj, scdca ? to_sup(intervalchoice.itemstates) : to_sub(intervalchoice.itemstates))
 	key = (i, obj.ℒ)
@@ -54,7 +58,7 @@ function squeeze_include!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::I
 	end
 end
 
-function squeeze_exclude!(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
+function squeeze_exclude(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
 	obj, scdca = cdcp.obj, cdcp.solver.scdca
 	obj = setℒ(obj, scdca ? to_sub(intervalchoice.itemstates) : to_sup(intervalchoice.itemstates))
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)

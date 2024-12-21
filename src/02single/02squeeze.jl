@@ -1,7 +1,6 @@
 function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState})
 	value = -Inf
 	lastaux = nothing
-
 	i = next_undetermined(itemstates)
 	if isnothing(i)
 		lastaux = findfirst(==(aux), itemstates)
@@ -11,7 +10,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 		end
 	end
 	while !isnothing(i)
-		itemstates, value, itemstate = squeeze!(cdcp, itemstates, i)
+		itemstates, value, itemstate = squeeze(cdcp, itemstates, i)
 		if itemstate == aux
 			lastaux = isnothing(lastaux) ? i : min(lastaux, i)
 		else
@@ -19,7 +18,6 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 		end
 		i = next_undetermined(itemstates, i)
 	end
-
 	if isnothing(lastaux)
 		cdcpstate = success
 	else
@@ -29,7 +27,7 @@ function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{Item
 	return itemstates, value, cdcpstate
 end
 
-function squeeze!(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
+function squeeze(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
 	# check exclude
 	exclude, obj, value0 = isexcluded(cdcp, itemstates, i)	
 	if exclude

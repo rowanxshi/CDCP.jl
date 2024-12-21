@@ -2,9 +2,9 @@ function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
 	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching_indices, cdcp.solver.matcheds
 	ntasks = length(matcheds)
 	for m in matcheds
-		empty!(m) # Just to be safe
+		empty!(m) # just to be safe
 	end
-	if ntasks == 1 # No multithreading
+	if isone(ntasks) # no multithreading
 		for k in branching
 			branching!(cdcp, k, 1)
 		end
@@ -40,7 +40,7 @@ function solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
 	cdcp.x = itemstates
 	cdcp.value = -Inf
 	solve!(cdcp)
-	cdcp.state == success || error("single-agent solver fails with z = ", cdcp.solver.z)
+	(cdcp.state == success) || error("single-agent solver fails with z = ", cdcp.solver.z)
 	return cdcp.x
 end
 
@@ -84,7 +84,7 @@ function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left
 	end
 end
 
-# With SCD-C from below, choice for an item only switches once
+# with scd-c from below, choice for an item only switches once
 function setitemstates_scdcb(itemstates::SVector{S,ItemState}, itemstates_left::SVector{S,ItemState}) where S
 	if @generated
 		ex = :(())
@@ -93,8 +93,7 @@ function setitemstates_scdcb(itemstates::SVector{S,ItemState}, itemstates_left::
 		end
 		return :(SVector{S,ItemState}($ex))
 	else
-		return SVector{S,ItemState}(
-			ntuple(i->ifelse(itemstates_left[i]==included, included, itemstates[i]), S))
+		return SVector{S,ItemState}(ntuple(i->ifelse(itemstates_left[i]==included, included, itemstates[i]), S))
 	end
 end
 
@@ -106,7 +105,7 @@ function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
 	cutoffs[1] = intervalchoices[1].zleft
 	itemstates_s[1] = itemstates_last = intervalchoices[1].itemstates
 	for intervalchoice in intervalchoices
-		# Filter out potential singletons
+		# filter out potential singletons
 		if intervalchoice.zleft < intervalchoice.zright && intervalchoice.itemstates != itemstates_last
 			push!(cutoffs, intervalchoice.zleft)
 			push!(itemstates_s, intervalchoice.itemstates)

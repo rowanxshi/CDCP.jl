@@ -9,7 +9,7 @@ function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
 		end
 	end
 	cdcp.state = success
-	cdcp
+	return cdcp
 end
 
 function branch(itemstates::AbstractVector{ItemState}, k::Int)
