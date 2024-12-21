@@ -1,12 +1,12 @@
 function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
-	solver = cdcp.solver
-	squeezing, branching = solver.squeezing_indices, solver.branching_indices
-	while !isempty(squeezing)
-		k = pop!(squeezing)
+	(; solver) = cdcp
+	(; squeezing_indices, branching_indices) = solver
+	while !isempty(squeezing_indices)
+		k = pop!(squeezing_indices)
 		intervalchoice = solver.intervalchoices[k]
 		i = next_undetermined(intervalchoice.itemstates)
 		if isnothing(i)
-			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching, k)
+			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching_indices, k)
 		else
 			if (cdcp.obj.fcall ≥ cdcp.solver.maxfcall)
 				cdcp.state = maxfcall_reached
@@ -14,10 +14,10 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 			end
 			intervalchoices = squeeze(cdcp, intervalchoice, i)
 			solver.intervalchoices[k] = intervalchoices[1]
-			push!(squeezing, k)
+			push!(squeezing_indices, k)
 			for j in 2:length(intervalchoices)
 				push!(solver.intervalchoices, intervalchoices[j])
-				push!(squeezing, length(solver.intervalchoices))
+				push!(squeezing_indices, length(solver.intervalchoices))
 			end
 		end
 	end
@@ -42,7 +42,8 @@ function squeeze(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalCh
 end
 
 function squeeze_include(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
-	obj, scdca = cdcp.obj, cdcp.solver.scdca
+	(; obj) = cdcp
+	(; scdca) = cdcp.solver
 	obj = setℒ(obj, scdca ? to_sup(intervalchoice.itemstates) : to_sub(intervalchoice.itemstates))
 	key = (i, obj.ℒ)
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
@@ -59,7 +60,8 @@ function squeeze_include(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::In
 end
 
 function squeeze_exclude(cdcp::CDCProblem{<:SqueezingPolicy}, intervalchoice::IntervalChoice, i::Int)
-	obj, scdca = cdcp.obj, cdcp.solver.scdca
+	(; obj) = cdcp
+	(; scdca) = cdcp.solver
 	obj = setℒ(obj, scdca ? to_sub(intervalchoice.itemstates) : to_sup(intervalchoice.itemstates))
 	z, cdcp.obj = cdcp.solver.zero_margin(obj, i, intervalchoice.zleft, intervalchoice.zright)
 	if z >= intervalchoice.zright # exclude the whole interval

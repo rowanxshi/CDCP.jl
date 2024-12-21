@@ -1,17 +1,17 @@
 function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
-	intervalchoices, branching, matcheds = cdcp.solver.intervalchoices, cdcp.solver.branching_indices, cdcp.solver.matcheds
+	(; intervalchoices, branching_indices, matcheds) = cdcp.solver
 	ntasks = length(matcheds)
 	for m in matcheds
 		empty!(m) # just to be safe
 	end
 	if isone(ntasks) # no multithreading
-		for k in branching
+		for k in branching_indices
 			branching!(cdcp, k, 1)
 		end
 	else
 		@sync for itask in 1:ntasks
-			Threads.@spawn for ik in itask:ntasks:length(branching)
-				branching!(cdcp, branching[ik], itask)
+			Threads.@spawn for ik in itask:ntasks:length(branching_indices)
+				branching!(cdcp, branching_indices[ik], itask)
 			end
 		end
 	end

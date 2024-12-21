@@ -1,5 +1,5 @@
 function squeeze_branch!(cdcp::CDCProblem{<:Squeezing})
-	branching = cdcp.solver.branching
+	(; branching) = cdcp.solver
 	while !isempty(branching)
 		itemstates = pop!(branching)
 		itemstates, value, state = squeeze!(cdcp, itemstates)

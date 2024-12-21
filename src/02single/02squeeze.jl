@@ -52,7 +52,8 @@ function squeeze(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemS
 end
 
 function isexcluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
-	obj, z = cdcp.obj, cdcp.solver.z
+	(; obj) = cdcp
+	(; z) = cdcp.solver
 	if cdcp.solver.scdca
 		sub = to_sub(itemstates)
 		obj = setℒ(obj, sub)
@@ -68,7 +69,8 @@ function isexcluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{It
 end
 
 function isincluded(cdcp::CDCProblem{<:Squeezing}, itemstates::AbstractVector{ItemState}, i::Int)
-	obj, z = cdcp.obj, cdcp.solver.z
+	(; obj) = cdcp
+	(; z) = cdcp.solver
 	if cdcp.solver.scdca
 		sup = to_sup(itemstates)
 		obj = setℒ(obj, sup)
