@@ -1,47 +1,36 @@
-function branching!(cdcp::CDCProblem{<:SqueezingPolicy})
-	(; intervalchoices, branching_indices, matcheds) = cdcp.solver
-	ntasks = length(matcheds)
-	for m in matcheds
-		empty!(m) # just to be safe
+# TODO maybe rename this file to search or something better than branch
+function search!(cdcp::CDCProblem{<:SqueezingPolicy})
+	(; intervalchoices, branching_indices, matched) = cdcp.solver
+	empty!(matched)
+	for k in branching_indices
+		search!(cdcp, k)
 	end
-	if isone(ntasks) # no multithreading
-		for k in branching_indices
-			branching!(cdcp, k, 1)
-		end
-	else
-		@sync for itask in 1:ntasks
-			Threads.@spawn for ik in itask:ntasks:length(branching_indices)
-				branching!(cdcp, branching_indices[ik], itask)
-			end
-		end
-	end
-	append!(intervalchoices, matcheds...)
+	append!(intervalchoices, matched)
 	return inprogress
 end
 
-function branching!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int, itask::Int)
-	intervalchoices, matched = cdcp.solver.intervalchoices, cdcp.solver.matcheds[itask]
+function search!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int)
+	matched = cdcp.solver.matched # vector of intervalchoices; TODO rename matcheds to be more descriptive, then remove this comment; but currently empty
+	singlecdcp = cdcp.solver.singlecdcp
+
+	(; intervalchoices)  = cdcp.solver
 	intervalchoice = intervalchoices[k]
-	sp = cdcp.solver.singlesolvers[itask]
-	itemstates_left = solvesingle!(sp, intervalchoice.zleft, intervalchoice.itemstates)
-	itemstates_right = solvesingle!(sp, intervalchoice.zright, intervalchoice.itemstates)
+	itemstates_left = solve!(singlecdcp, intervalchoice.zleft, intervalchoice.itemstates).x
+	itemstates_right = solve!(singlecdcp, intervalchoice.zright, intervalchoice.itemstates).x
 	if itemstates_left == itemstates_right
 		intervalchoices[k] = IntervalChoice(intervalchoice.zleft, intervalchoice.zright, itemstates_left)
 	else
-		search!(sp, matched, intervalchoice.zleft, itemstates_left, intervalchoice.zright, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
-		# Overwrite the old interval with aux
-		intervalchoices[k] = pop!(matched)
+		search!(singlecdcp, matched, intervalchoice.zleft, itemstates_left, intervalchoice.zright, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
+		intervalchoices[k] = pop!(matched) # overwrite the old interval with aux
 	end
 end
 
-function solvesingle!(cdcp::CDCProblem{<:Squeezing}, z, itemstates)
-	cdcp.state = inprogress
-	cdcp.solver = Squeezing(cdcp.solver.scdca, empty!(cdcp.solver.branching), z)
+function solve!(cdcp::CDCProblem{<:Squeezing}, z, itemstates::AbstractVector{ItemState})
+	reinit!(cdcp; z, fcall=false)
 	cdcp.x = itemstates
-	cdcp.value = -Inf
 	solve!(cdcp)
 	(cdcp.state == success) || error("single-agent solver fails with z = ", cdcp.solver.z)
-	return cdcp.x
+	return cdcp
 end
 
 function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left0, zright0, itemstates_right0, itemstates0, obj2, equal_obj)
@@ -54,7 +43,7 @@ function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left
 		# ! TODO Rowan proof double-check
 		if zleft < zmiddle < zright # Additional cutoff points in between
 			itemstates0 = cdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
-			itemstates_new = solvesingle!(cdcp, zmiddle, itemstates0)
+			itemstates_new = solve!(cdcp, zmiddle, itemstates0).x
 			if itemstates_new == itemstates_left || itemstates_new == itemstates_right
 				push!(matched, IntervalChoice(zleft, zmiddle, itemstates_left), IntervalChoice(zmiddle, zright, itemstates_right))
 				if zright != zright0 # Move to the interval on the right
