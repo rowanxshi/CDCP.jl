@@ -4,7 +4,9 @@ end
 
 function (w::Wrapped_Equalise_Obj)(obj1, obj2, l, r)
 	obj1 = addfcall(obj1, 2)
-	return w.f((obj1.ℒ, obj2.ℒ), l, r), obj1
+	z = w.f((obj1.ℒ, obj2.ℒ), l, r)
+	(!isa(z, Number) || isnan(z)) && error("zero_D_j_obj now must return a number")
+	return z, obj1
 end
 
 struct Wrapped_Zero_D_j_Obj{F}
@@ -16,6 +18,7 @@ function (w::Wrapped_Zero_D_j_Obj)(obj, i, zleft, zright)
 	copyto!(w.J, obj.ℒ)
 	z = w.f(i, w.J, zleft, zright)
 	obj = addfcall(obj, 1)
+	(!isa(z, Number) || isnan(z)) && error("zero_D_j_obj now must return a number")
 	return z, obj
 end
 
