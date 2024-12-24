@@ -57,8 +57,4 @@ include("04compat/00structs.jl")
 include("04compat/01interface.jl")
 include("04compat/02helpers.jl")
 
-function __init__()
-	@warn("This version of CDCP.jl represents many changes. The package is now CombinatorialDiscreteChoiceProblems rather than CDCP. It is also encouraged to read the new documentation.")
-end
-
 end
