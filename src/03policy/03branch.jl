@@ -73,7 +73,7 @@ function indifferenttype(solver::SqueezingPolicy, zleft, itemstates_left, zright
 	(; singlecdcp, obj2, equal_obj) = solver
 	obj1 = setℒ(singlecdcp.obj, to_sub(itemstates_left))
 	obj2 = setℒ(obj2, to_sub(itemstates_right))
-	zmiddle, _ = equal_obj(obj1, obj2, zleft, zright)
+	zmiddle = first(equal_obj(obj1, obj2, zleft, zright))
 	(zleft <= zmiddle <= zright) || error("equal_obj returns z that is not between zleft and zright")
 	zmiddle
 end
