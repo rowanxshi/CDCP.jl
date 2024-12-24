@@ -1,5 +1,6 @@
 function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
-	obj, ids, z = cdcp.obj, cdcp.solver.ids, cdcp.solver.z
+	(; obj) = cdcp
+	(; ids, z) = cdcp.solver
 	if restart
 		resize!(ids, 1)
 		ids[1] = 0

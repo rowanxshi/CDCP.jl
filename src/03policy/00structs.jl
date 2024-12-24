@@ -32,8 +32,8 @@ struct Policy{Z,V <: AbstractVector{ItemState}} <: AbstractVector{IntervalChoice
 	zright::Z
 end
 function (policy::Policy)(z)
-	(z ≤ first(policy.cutoffs)) && error("provided type $z is less than the lowest cutoff $first(policy.cutoffs)")
-	k = findlast(≤(z), policy.cutoffs)
+	(z <= first(policy.cutoffs)) && error("provided type $z is less than the lowest cutoff $first(policy.cutoffs)")
+	k = findlast(<=(z), policy.cutoffs)
 	policy.itemstates_s[k]
 end
 function Policy(obj::Objective, zbounds; itemstates=allundetermined(obj))
@@ -104,10 +104,9 @@ Fields
 * `branching_indices::Vector{Int}`
 * `zero_margin::F1`
 * `equal_obj::F2`
-* `matcheds::Vector{Vector{IntervalChoice{Z,V}}}`
-* `singlesolvers::Vector{S}`
+* `singlecdcp::S`
 * `obj2::O`
-* `nobranching::Bool`
+* `skiprefinement::Bool`
 * `maxfcall::Int`
 """
 struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
@@ -117,9 +116,8 @@ struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	branching_indices::Vector{Int}
 	zero_margin::F1
 	equal_obj::F2
-	matcheds::Vector{Vector{IntervalChoice{Z,V}}}
-	singlesolvers::Vector{S}
+	singlecdcp::S
 	obj2::O
-	nobranching::Bool
+	skiprefinement::Bool
 	maxfcall::Int
 end

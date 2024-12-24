@@ -32,8 +32,7 @@ Keywords
 ===
 * `zero_margin=nothing`: a function that returns the type `z` that is indifferent to adding item `ℓ` to decision set `ℒ`; it should have the method `zero_margin(obj::Objective, ℓ::Int, zleft, zright)` with `ℒ` attached to `obj` and if not supplied, this function will be generated automatically from `equal_obj`
 * `policy0::Policy=Policy(obj, zbounds)`: initial policy which on top of which optimisation occurs
-* `ntasks=1`: Number of threads used in the branching process.
-* `nobranching::Bool=false`: skip the branching step
+* `skiprefinement::Bool=false`: skip the refinement step that searches resolves intervals for which squeezing doesn't pin down optimal policy
 * `singlekw=NamedTuple()`: keyword arguments passed to the single-agent solver as a `NamedTuple` used in the branching stage.
 * `maxfcall=1_000_000_000`: maximum calls to the objective function
 

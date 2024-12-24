@@ -43,7 +43,7 @@ end
     @test p2.x.cutoffs ≈ p.x.cutoffs atol=1e-8
 
     p3 = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf),
-        zero_margin=zero_margin, ntasks=2)
+        zero_margin=zero_margin)
     @time solve!(p3);
     @test p3.x.itemstates_s == p.x.itemstates_s
     @test p3.x.cutoffs ≈ p.x.cutoffs atol=1e-8
@@ -69,7 +69,7 @@ end
     @test findall(p.x.itemstates_s[11] .== included) == [1:6...,8:10...]
 
     p1 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
-        zero_margin=zero_margin, ntasks=2)
+        zero_margin=zero_margin)
     @time solve!(p1);
     @test p1.x.itemstates_s == p.x.itemstates_s
     @test p1.x.cutoffs ≈ p.x.cutoffs atol=1e-8
@@ -86,7 +86,7 @@ end
     @test p1.x.itemstates_s == p.x.itemstates_s
 
     p2 = init(SqueezingPolicy, obj, 10, true, equal_obj, (-Inf, Inf),
-        zero_margin=zero_margin, ntasks=2)
+        zero_margin=zero_margin)
     @time solve!(p2);
     @test p2.x.itemstates_s == p1.x.itemstates_s
     @test p2.x.cutoffs ≈ p1.x.cutoffs atol=1e-8

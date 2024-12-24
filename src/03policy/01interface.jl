@@ -1,17 +1,17 @@
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
 	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
-	cdcp.state = squeeze!(cdcp)
+	squeeze!(cdcp)
 	if cdcp.state == maxfcall_reached
 		@warn "maxfcall is reached before convergence"
 		return cdcp
 	end
-	cdcp.solver.nobranching || (cdcp.state = branching!(cdcp))
+	cdcp.solver.skiprefinement || (cdcp.state = refine!(cdcp))
 	concat!(cdcp)
-	cdcp.solver.nobranching || (cdcp.state = success)
+	cdcp.solver.skiprefinement || (cdcp.state = success)
 	return cdcp
 end
 
-function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), ntasks=1, nobranching::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
+function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), skiprefinement::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
 	obj2 = deepcopy(obj)
 	# harmonize user defined functions
@@ -27,9 +27,8 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	end
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
 	V = eltype(policy0.itemstates_s)
-	matcheds = [IntervalChoice{Z,V}[] for _ in 1:ntasks]
-	singlesolvers = [init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...) for _ in 1:ntasks]
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, equal_obj, matcheds, singlesolvers, obj2, nobranching, maxfcall), policy0
+	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
+	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall), policy0
 end
 
 function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
@@ -47,7 +46,6 @@ function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equ
 	cdcp.x.itemstates_s[1] = allundetermined(obj)
 	cdcp.value = convert(typeof(cdcp.value), -Inf)
 	cdcp.state = inprogress
-	solver = cdcp.solver
 	obj2 = deepcopy(cdcp.obj)
 	# harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...)
@@ -62,18 +60,14 @@ function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equ
 	elseif zero_margin isa Default_Zero_Margin
 		reinit!(zero_margin)
 	end
+	solver = cdcp.solver
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = cdcp.x[1]
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
-	for m in solver.matcheds
-		empty!(m)
-	end
-	for s in solver.singlesolvers
-		s.obj = cdcp.obj
-		reinit!(s; scdca=scdca)
-	end
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.matcheds, solver.singlesolvers, obj2, solver.nobranching, solver.maxfcall)
+	solver.singlecdcp.obj = cdcp.obj
+	reinit!(solver.singlecdcp; scdca=scdca)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, solver.skiprefinement, solver.maxfcall)
 	return cdcp
 end
