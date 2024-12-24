@@ -106,7 +106,7 @@ Fields
 * `equal_obj::F2`
 * `singlecdcp::S`
 * `obj2::O`
-* `nobranching::Bool`
+* `skiprefinement::Bool`
 * `maxfcall::Int`
 """
 struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
@@ -118,6 +118,6 @@ struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	equal_obj::F2
 	singlecdcp::S
 	obj2::O
-	nobranching::Bool
+	skiprefinement::Bool
 	maxfcall::Int
 end
