@@ -50,7 +50,7 @@ include("02single/03branch.jl")
 include("03policy/00structs.jl")
 include("03policy/01interface.jl")
 include("03policy/02squeeze.jl")
-include("03policy/03branch.jl")
+include("03policy/03refine.jl")
 
 # for backwards compatibility
 include("04compat/00structs.jl")
