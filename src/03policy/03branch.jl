@@ -1,30 +1,35 @@
 # TODO maybe rename this file to search or something better than branch
 function search!(cdcp::CDCProblem{<:SqueezingPolicy})
-	(; intervalchoices, branching_indices, matched) = cdcp.solver
+	search!(cdcp.solver)
+end
+function search!(solver::SqueezingPolicy)
+	(; intervalchoices, branching_indices, matched) = solver
 	empty!(matched)
-	for k in branching_indices
-		search!(cdcp, k)
+	while !isempty(branching_indices)
+		k = pop!(branching_indices)
+		search!(solver, k)
 	end
 	append!(intervalchoices, matched)
 	return inprogress
 end
-
-function search!(cdcp::CDCProblem{<:SqueezingPolicy}, k::Int)
-	matched = cdcp.solver.matched # vector of intervalchoices; TODO rename matcheds to be more descriptive, then remove this comment; but currently empty
-	singlecdcp = cdcp.solver.singlecdcp
-
-	(; intervalchoices)  = cdcp.solver
+function search!(solver::SqueezingPolicy, k::Int)
+	(; intervalchoices, matched) = solver
 	intervalchoice = intervalchoices[k]
-	itemstates_left = solve!(singlecdcp, intervalchoice.zleft, intervalchoice.itemstates).x
-	itemstates_right = solve!(singlecdcp, intervalchoice.zright, intervalchoice.itemstates).x
+	(itemstates_left, itemstates_right) = solve_endpoints!(solver, intervalchoice)
 	if itemstates_left == itemstates_right
 		intervalchoices[k] = IntervalChoice(intervalchoice.zleft, intervalchoice.zright, itemstates_left)
 	else
-		search!(singlecdcp, matched, intervalchoice.zleft, itemstates_left, intervalchoice.zright, itemstates_right, intervalchoice.itemstates, cdcp.solver.obj2, cdcp.solver.equal_obj)
+		search!(matched, intervalchoice.zleft, itemstates_left, intervalchoice.zright, itemstates_right, intervalchoice.itemstates, solver)
 		intervalchoices[k] = pop!(matched) # overwrite the old interval with aux
 	end
 end
 
+function solve_endpoints!(solver::SqueezingPolicy, intervalchoice::IntervalChoice)
+	(; singlecdcp) = solver
+	itemstates_left = solve!(singlecdcp, intervalchoice.zleft, intervalchoice.itemstates).x
+	itemstates_right = solve!(singlecdcp, intervalchoice.zright, intervalchoice.itemstates).x
+	(itemstates_left, itemstates_right)
+end
 function solve!(cdcp::CDCProblem{<:Squeezing}, z, itemstates::AbstractVector{ItemState})
 	reinit!(cdcp; z, fcall=false)
 	cdcp.x = itemstates
@@ -33,41 +38,39 @@ function solve!(cdcp::CDCProblem{<:Squeezing}, z, itemstates::AbstractVector{Ite
 	return cdcp
 end
 
-function search!(cdcp::CDCProblem{<:Squeezing}, matched, zleft0, itemstates_left0, zright0, itemstates_right0, itemstates0, obj2, equal_obj)
+function search!(matched, zleft0, itemstates_left0, zright0, itemstates_right0, itemstates0, solver::SqueezingPolicy)
+	(; singlecdcp, obj2, equal_obj) = solver
 	zleft, itemstates_left, zright, itemstates_right = zleft0, itemstates_left0, zright0, itemstates_right0
 	while true
-		# itemstates_left and itemstates_right should always be different here
-		obj1 = setℒ(cdcp.obj, to_sub(itemstates_left))
+		obj1 = setℒ(singlecdcp.obj, to_sub(itemstates_left))
 		obj2 = setℒ(obj2, to_sub(itemstates_right))
 		zmiddle, _ = equal_obj(obj1, obj2, zleft, zright)
-		# ! TODO Rowan proof double-check
-		if zleft < zmiddle < zright # Additional cutoff points in between
-			itemstates0 = cdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
-			itemstates_new = solve!(cdcp, zmiddle, itemstates0).x
-			if itemstates_new == itemstates_left || itemstates_new == itemstates_right
-				push!(matched, IntervalChoice(zleft, zmiddle, itemstates_left), IntervalChoice(zmiddle, zright, itemstates_right))
-				if zright != zright0 # Move to the interval on the right
-					zleft, itemstates_left = zright, itemstates_right
-					zright, itemstates_right = zright0, itemstates_right0
-				else
-					return
-				end
-			else # More cutoff points on the left
-				zright, itemstates_right = zmiddle, itemstates_new
-			end
-		else # No split of interval
+		(zleft <= zmiddle <= zright) || error("equal_obj returns z that is not between zleft and zright")
+		if (zmiddle == zleft) || (zmiddle == zright)
 			if zmiddle == zleft
 				push!(matched, IntervalChoice(zleft, zright, itemstates_right))
 			elseif zmiddle == zright
 				push!(matched, IntervalChoice(zleft, zright, itemstates_left))
-			else
-				error("z is not in between")
 			end
-			if zright != zright0 # Move to the interval on the right
+			if zright != zright0 # move to the interval on the right
 				zleft, itemstates_left = zright, itemstates_right
 				zright, itemstates_right = zright0, itemstates_right0
 			else
-				return
+				return matched
+			end
+		else
+			itemstates0 = singlecdcp.solver.scdca ? itemstates0 : setitemstates_scdcb(itemstates0, itemstates_left)
+			itemstates_middle = solve!(singlecdcp, zmiddle, itemstates0).x
+			if (itemstates_middle == itemstates_left) || (itemstates_middle == itemstates_right)
+				push!(matched, IntervalChoice(zleft, zmiddle, itemstates_left), IntervalChoice(zmiddle, zright, itemstates_right))
+				if zright != zright0 # move to the interval on the right
+					zleft, itemstates_left = zright, itemstates_right
+					zright, itemstates_right = zright0, itemstates_right0
+				else
+					return matched
+				end
+			else
+				zright, itemstates_right = zmiddle, itemstates_middle
 			end
 		end
 	end

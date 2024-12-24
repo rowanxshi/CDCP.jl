@@ -8,7 +8,7 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 		if isnothing(i)
 			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching_indices, k)
 		else
-			if (cdcp.obj.fcall ≥ cdcp.solver.maxfcall)
+			if (cdcp.solver.maxfcall <= cdcp.obj.fcall)
 				cdcp.state = maxfcall_reached
 				return cdcp
 			end

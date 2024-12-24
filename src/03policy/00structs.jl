@@ -32,8 +32,8 @@ struct Policy{Z,V <: AbstractVector{ItemState}} <: AbstractVector{IntervalChoice
 	zright::Z
 end
 function (policy::Policy)(z)
-	(z ≤ first(policy.cutoffs)) && error("provided type $z is less than the lowest cutoff $first(policy.cutoffs)")
-	k = findlast(≤(z), policy.cutoffs)
+	(z <= first(policy.cutoffs)) && error("provided type $z is less than the lowest cutoff $first(policy.cutoffs)")
+	k = findlast(<=(z), policy.cutoffs)
 	policy.itemstates_s[k]
 end
 function Policy(obj::Objective, zbounds; itemstates=allundetermined(obj))
