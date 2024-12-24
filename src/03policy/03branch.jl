@@ -1,4 +1,5 @@
 # TODO maybe rename this file to search or something better than branch
+# TODO remove matched and just put stuff onto the end of intervalchoices 
 function search!(cdcp::CDCProblem{<:SqueezingPolicy})
 	search!(cdcp.solver)
 end
@@ -90,15 +91,15 @@ function setitemstates_scdcb(itemstates::SVector{S,ItemState}, itemstates_left::
 end
 
 function concat!(cdcp::CDCProblem{<:SqueezingPolicy})
-	intervalchoices = cdcp.solver.intervalchoices
+	(; intervalchoices) = cdcp.solver
 	sort!(intervalchoices, by=(intervalchoice->getproperty(intervalchoice, :zleft)))
 	cutoffs = resize!(cdcp.x.cutoffs, 1)
 	itemstates_s = resize!(cdcp.x.itemstates_s, 1)
 	cutoffs[1] = intervalchoices[1].zleft
-	itemstates_s[1] = itemstates_last = intervalchoices[1].itemstates
+	itemstates_s[1] = intervalchoices[1].itemstates
+	itemstates_last = itemstates_s[1]
 	for intervalchoice in intervalchoices
-		# filter out potential singletons
-		if intervalchoice.zleft < intervalchoice.zright && intervalchoice.itemstates != itemstates_last
+		if intervalchoice.itemstates != itemstates_last
 			push!(cutoffs, intervalchoice.zleft)
 			push!(itemstates_s, intervalchoice.itemstates)
 			itemstates_last = intervalchoice.itemstates

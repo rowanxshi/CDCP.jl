@@ -4,6 +4,7 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 	while !isempty(squeezing_indices)
 		k = pop!(squeezing_indices)
 		intervalchoice = solver.intervalchoices[k]
+		(intervalchoice.zleft == intervalchoice.zright) && continue
 		i = next_undetermined(intervalchoice.itemstates)
 		if isnothing(i)
 			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching_indices, k)

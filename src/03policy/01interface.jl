@@ -29,7 +29,7 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	V = eltype(policy0.itemstates_s)
 	matched = IntervalChoice{Z,V}[]
 	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
-	return SqueezingPolicy(scdca, intervalchoices, collect(1:length(policy0.itemstates_s)), Int[], zero_margin, equal_obj, matched, singlecdcp, obj2, nobranching, maxfcall), policy0
+	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, matched, singlecdcp, obj2, nobranching, maxfcall), policy0
 end
 
 function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
