@@ -27,9 +27,8 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	end
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
 	V = eltype(policy0.itemstates_s)
-	matched = IntervalChoice{Z,V}[]
 	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
-	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, matched, singlecdcp, obj2, nobranching, maxfcall), policy0
+	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, nobranching, maxfcall), policy0
 end
 
 function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
@@ -67,9 +66,8 @@ function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equ
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
-	empty!(solver.matched)
 	solver.singlecdcp.obj = cdcp.obj
 	reinit!(solver.singlecdcp; scdca=scdca)
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.matched, solver.singlecdcp, obj2, solver.nobranching, solver.maxfcall)
+	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, solver.nobranching, solver.maxfcall)
 	return cdcp
 end

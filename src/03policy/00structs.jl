@@ -104,7 +104,6 @@ Fields
 * `branching_indices::Vector{Int}`
 * `zero_margin::F1`
 * `equal_obj::F2`
-* `matched::Vector{IntervalChoice{Z,V}}`
 * `singlecdcp::S`
 * `obj2::O`
 * `nobranching::Bool`
@@ -117,7 +116,6 @@ struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	branching_indices::Vector{Int}
 	zero_margin::F1
 	equal_obj::F2
-	matched::Vector{IntervalChoice{Z,V}}
 	singlecdcp::S
 	obj2::O
 	nobranching::Bool
