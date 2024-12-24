@@ -1,5 +1,3 @@
-# TODO maybe rename this file to search or something better than branch
-# TODO remove matched and just put stuff onto the end of intervalchoices 
 function refine!(cdcp::CDCProblem{<:SqueezingPolicy})
 	refine!(cdcp.solver)
 end
