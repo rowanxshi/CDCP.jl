@@ -24,10 +24,9 @@ struct Objective{F,V <: AbstractVector}
 	f::F
 	ℒ::V
 	fcall::Int
-end
-
-function Objective(f, ℒ)
-	Objective(f, ℒ, 0)
+	function Objective(f::F, ℒ::V, fcall::Int = 0) where {F, V}
+		new{F, V}(f, ℒ, fcall)
+	end
 end
 
 function setℒ(obj::Objective{<:Any,V}, ℒ::V) where V
