@@ -54,6 +54,21 @@ function init(::Type{Algorithm}, obj, S::Integer, args...; valuetype::Type=Float
 	solver, x = init_solverx(Algorithm, obj, args...; kwargs...)
 	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
+function reinit!(cdcp::CDCProblem, S; obj=cdcp.obj)
+	cdcp.value = convert(typeof(cdcp.value), -Inf)
+	cdcp.state = inprogress
+	cdcp.obj = reinit!(obj, S)
+	cdcp
+end
+function reinit!(obj::Objective, S)
+	if obj isa Objective
+		obj = clearfcall(obj)
+	else
+		ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
+		obj = Objective(obj, ℒ)
+	end
+	obj
+end
 
 function allundetermined!(itemstates::SVector)
 	allundetermined(itemstates)

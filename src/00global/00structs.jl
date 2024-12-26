@@ -118,15 +118,6 @@ See also [`solve`](@ref), [`CDCProblem`](@ref).
 	aux
 	undetermined
 end
-function Base.convert(::Type{Bool}, itemstate::ItemState)
-	if itemstate == included
-		return true
-	elseif itemstate == excluded
-		return false
-	else
-		error("Attempted to convert $itemstate to boolean")
-	end
-end
 
 """
     CDCProblem{M<:CDCPSolver, O<:Objective, T, F<:AbstractFloat}

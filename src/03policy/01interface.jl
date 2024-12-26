@@ -31,27 +31,34 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall), policy0
 end
 
-function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca) where {T <: CDCProblem{<:SqueezingPolicy}}
+function reinit!(cdcp::T; obj=cdcp.obj, solverkw...) where {T <: CDCProblem{<:SqueezingPolicy}}
 	S = length(cdcp.x.itemstates_s[1])
-	if obj isa Objective
-		cdcp.obj = clearfcall(obj)
-	else
-		cdcp.obj = Objective(obj, S < static_threshold() ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S))
-	end
-	zmin = cdcp.x.cutoffs[1]
-	zbounds = (zmin, cdcp.x.zright)
-	resize!(cdcp.x.cutoffs, 1)
-	cdcp.x.cutoffs[1] = zmin
-	resize!(cdcp.x.itemstates_s, 1)
-	cdcp.x.itemstates_s[1] = allundetermined(obj)
-	cdcp.value = convert(typeof(cdcp.value), -Inf)
-	cdcp.state = inprogress
-	obj2 = deepcopy(cdcp.obj)
+	cdcp = reinit!(cdcp, S; obj)
+	cdcp.obj = reinit!(obj, S)
+	cdcp.x = reinit!(cdcp.x, obj)
+	zbounds = (cdcp.x.cutoffs[1], cdcp.x.zright)
+	cdcp.solver = reinit!(cdcp.solver, cdcp.x[1], zbounds; obj, solverkw...)
+	return cdcp
+end
+
+function reinit!(policy::Policy, obj)
+	zmin = policy.cutoffs[1]
+	resize!(policy.cutoffs, 1)
+	policy.cutoffs[1] = zmin
+	resize!(policy.itemstates_s, 1)
+	policy.itemstates_s[1] = allundetermined(obj)
+	policy
+end
+function reinit!(solver::SqueezingPolicy, intervalchoice::IntervalChoice, zbounds; obj, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca)
+	resize!(solver.intervalchoices, 1)
+	solver.intervalchoices[1] = intervalchoice
+	resize!(solver.squeezing_indices, 1)
+	solver.squeezing_indices[1] = 1
+	empty!(solver.branching_indices)
+	obj2 = deepcopy(obj)
+	zmin = first(zbounds)
+	reinit!(solver.singlecdcp; obj, scdca)
 	# harmonize user defined functions
-	if !applicable(equal_obj, obj, obj2, zbounds...)
-		# assume equal_obj follows the old requirement for equalise_obj
-		equal_obj = Wrapped_Equalise_Obj(equal_obj)
-	end
 	if isnothing(zero_margin)
 		zero_margin = Default_Zero_Margin(equal_obj, obj2, zmin)
 	elseif !applicable(zero_margin, obj, 1, zbounds...)
@@ -60,14 +67,9 @@ function reinit!(cdcp::T; obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equ
 	elseif zero_margin isa Default_Zero_Margin
 		reinit!(zero_margin)
 	end
-	solver = cdcp.solver
-	resize!(solver.intervalchoices, 1)
-	solver.intervalchoices[1] = cdcp.x[1]
-	resize!(solver.squeezing_indices, 1)
-	solver.squeezing_indices[1] = 1
-	empty!(solver.branching_indices)
-	solver.singlecdcp.obj = cdcp.obj
-	reinit!(solver.singlecdcp; scdca=scdca)
-	cdcp.solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, solver.skiprefinement, solver.maxfcall)
-	return cdcp
+	if !applicable(equal_obj, obj, obj2, zbounds...)
+		# assume equal_obj follows the old requirement for equalise_obj
+		equal_obj = Wrapped_Equalise_Obj(equal_obj)
+	end
+	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, solver.skiprefinement, solver.maxfcall)
 end

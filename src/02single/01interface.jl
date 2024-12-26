@@ -11,12 +11,15 @@ function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs..
 	return Squeezing(scdca, V[], z), itemstates
 end
 
-function reinit!(cdcp::CDCProblem{<:Squeezing}; scdca=cdcp.solver.scdca, z=cdcp.solver.z, fcall::Bool = true)
-	cdcp.solver = Squeezing(scdca, empty!(cdcp.solver.branching), z)
-	fcall && (cdcp.obj = clearfcall(cdcp.obj))
+function reinit!(cdcp::CDCProblem{<:Squeezing}; obj=cdcp.obj, solverkw...)
+	S = length(cdcp.x)
+	cdcp = reinit!(cdcp, S; obj)
 	cdcp.x = allundetermined!(cdcp.x)
-	cdcp.value = -Inf
+	cdcp.solver = reinit!(cdcp.solver; solverkw...)
 	return cdcp
+end
+function reinit!(solver::Squeezing; scdca=solver.scdca, z=solver.z)
+	solver = Squeezing(scdca, empty!(solver.branching), z)
 end
 
 function next_undetermined(itemstates, i)
