@@ -1,4 +1,4 @@
-function init_solverx(::Type{Naive}, obj, args...; z=nothing, kwargs...)
+function init_solverx(::Type{Naive}, obj; z=nothing, kwargs...)
 	solver = Naive([0], z)
 	x = copy(obj.ℒ)
 	solver, x
