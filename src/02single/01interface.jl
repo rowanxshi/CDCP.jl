@@ -11,12 +11,16 @@ function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs..
 	return Squeezing(scdca, V[], z), itemstates
 end
 
-function reinit!(cdcp::CDCProblem{<:Squeezing}; obj=cdcp.obj, solverkw...)
+function reinit!(cdcp::CDCProblem{<:Squeezing}; obj=cdcp.obj, fcall=true, solverkw...)
 	S = length(cdcp.x)
-	cdcp = reinit!(cdcp, S; obj)
+	cdcp = reinit!(cdcp, S; obj, fcall)
+	cdcp = reinit_solverx!(cdcp; solverkw...)
+	return cdcp
+end
+function reinit_solverx!(cdcp::CDCProblem{<:Squeezing}; solverkw...)
 	cdcp.x = allundetermined!(cdcp.x)
 	cdcp.solver = reinit!(cdcp.solver; solverkw...)
-	return cdcp
+	cdcp
 end
 function reinit!(solver::Squeezing; scdca=solver.scdca, z=solver.z)
 	solver = Squeezing(scdca, empty!(solver.branching), z)

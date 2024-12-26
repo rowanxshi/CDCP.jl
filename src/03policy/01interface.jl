@@ -31,16 +31,20 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall), policy0
 end
 
-function reinit!(cdcp::T; obj=cdcp.obj, solverkw...) where {T <: CDCProblem{<:SqueezingPolicy}}
+function reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, solverkw...)
 	S = length(cdcp.x.itemstates_s[1])
-	cdcp = reinit!(cdcp, S; obj)
+	cdcp = reinit!(cdcp, S; obj, fcall)
 	cdcp.obj = reinit!(obj, S)
-	cdcp.x = reinit!(cdcp.x, obj)
-	zbounds = (cdcp.x.cutoffs[1], cdcp.x.zright)
-	cdcp.solver = reinit!(cdcp.solver, cdcp.x[1], zbounds; obj, solverkw...)
+	cdcp = reinit_solverx!(cdcp; obj, solverkw...)
 	return cdcp
 end
 
+function reinit_solverx!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, solverkw...)
+	cdcp.x = reinit!(cdcp.x, obj)
+	zbounds = (cdcp.x.cutoffs[1], cdcp.x.zright)
+	cdcp.solver = reinit!(cdcp.solver, cdcp.x[1], zbounds; obj, fcall, solverkw...)
+	cdcp
+end
 function reinit!(policy::Policy, obj)
 	zmin = policy.cutoffs[1]
 	resize!(policy.cutoffs, 1)
@@ -49,7 +53,7 @@ function reinit!(policy::Policy, obj)
 	policy.itemstates_s[1] = allundetermined(obj)
 	policy
 end
-function reinit!(solver::SqueezingPolicy, intervalchoice::IntervalChoice, zbounds; obj, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca)
+function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=false, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca) where {T<:SqueezingPolicy}
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = intervalchoice
 	resize!(solver.squeezing_indices, 1)
@@ -57,7 +61,7 @@ function reinit!(solver::SqueezingPolicy, intervalchoice::IntervalChoice, zbound
 	empty!(solver.branching_indices)
 	obj2 = deepcopy(obj)
 	zmin = first(zbounds)
-	reinit!(solver.singlecdcp; obj, scdca)
+	reinit!(solver.singlecdcp; obj, fcall, scdca)
 	# harmonize user defined functions
 	if isnothing(zero_margin)
 		zero_margin = Default_Zero_Margin(equal_obj, obj2, zmin)
