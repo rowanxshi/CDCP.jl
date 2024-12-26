@@ -105,18 +105,18 @@ end
     ItemState::Int8
 
 An `Enum` type describing the state of item `ℓ` with values:
-* `undetermined`: not yet checked
-* `included`: from squeezing, definitely included
 * `excluded`: from squeezing, definitely excluded
+* `included`: from squeezing, definitely included
 * `aux`: checked, but cannot definitively include or exclude based on squeezing
+* `undetermined`: not yet checked
 
 See also [`solve`](@ref), [`CDCProblem`](@ref).
 """
 @enum ItemState::Int8 begin
-	undetermined
-	included
 	excluded
+	included
 	aux
+	undetermined
 end
 function Base.convert(::Type{Bool}, itemstate::ItemState)
 	if itemstate == included
