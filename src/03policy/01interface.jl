@@ -1,11 +1,12 @@
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
 	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
+	@debug "squeezing"
 	squeeze!(cdcp)
 	if cdcp.state == maxfcall_reached
 		@warn "maxfcall is reached before convergence"
 		return cdcp
 	end
-	cdcp.solver.skiprefinement || (cdcp.state = refine!(cdcp))
+	cdcp.solver.skiprefinement || (@debug("refining"); cdcp.state = refine!(cdcp))
 	concat!(cdcp)
 	cdcp.solver.skiprefinement || (cdcp.state = success)
 	return cdcp

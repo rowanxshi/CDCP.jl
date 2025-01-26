@@ -1,7 +1,8 @@
 function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.solver.scdca, z=cdcp.solver.z)
 	restart && (cdcp = reinit!(cdcp; scdca, z))
+	@debug "squeezing"
 	cdcp.x, cdcp.value, cdcp.state = squeeze!(cdcp, cdcp.x)
-	(cdcp.state != success) && branch!(cdcp)
+	(cdcp.state != success) && (@debug("branching"); branch!(cdcp))
 	return cdcp
 end
 
