@@ -1,15 +1,21 @@
 function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
 	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
 	@debug "squeezing"
-	squeeze!(cdcp)
+	time_squeeze = @elapsed squeeze!(cdcp)
 	if cdcp.state == maxfcall_reached
 		@warn "maxfcall is reached before convergence"
 		return cdcp
 	end
-	cdcp.solver.skiprefinement || (@debug("refining"); cdcp.state = refine!(cdcp))
+	time_refine = Inf
+	if !cdcp.solver.skiprefinement
+		@debug("refining")
+		time_refine = @elapsed begin
+			cdcp.state = refine!(cdcp)
+		end
+	end
 	concat!(cdcp)
 	cdcp.solver.skiprefinement || (cdcp.state = success)
-	return cdcp
+	return (time_squeeze, time_refine)
 end
 
 function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), skiprefinement::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
