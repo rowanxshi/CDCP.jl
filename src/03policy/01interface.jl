@@ -1,20 +1,24 @@
-function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca)
+function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca, refinementonly=false)
 	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
-	@debug "squeezing"
-	time_squeeze = @elapsed squeeze!(cdcp)
-	if cdcp.state == maxfcall_reached
-		@warn "maxfcall is reached before convergence"
-		return cdcp
+	time_squeeze = Inf
+	if refinementonly
+		append!(cdcp.solver.branching_indices, cdcp.solver.squeezing_indices)
+		empty!(cdcp.solver.squeezing_indices)
+	else
+		@debug "squeezing"
+		time_squeeze = @elapsed squeeze!(cdcp)
+		if cdcp.state == maxfcall_reached
+			@warn "maxfcall is reached before convergence"
+			return cdcp
+		end
 	end
 	time_refine = Inf
 	if !cdcp.solver.skiprefinement
 		@debug("refining")
-		time_refine = @elapsed begin
-			cdcp.state = refine!(cdcp)
-		end
+		time_refine = @elapsed refine!(cdcp)
+		cdcp.state = success
 	end
 	concat!(cdcp)
-	cdcp.solver.skiprefinement || (cdcp.state = success)
 	return (time_squeeze, time_refine)
 end
 
