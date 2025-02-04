@@ -64,7 +64,7 @@ function reinit!(policy::Policy, obj)
 	policy.itemstates_s[1] = allundetermined(obj)
 	policy
 end
-function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=false, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca) where {T<:SqueezingPolicy}
+function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=false, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca, skiprefinement=solver.skiprefinement) where {T<:SqueezingPolicy}
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = intervalchoice
 	resize!(solver.squeezing_indices, 1)
@@ -86,5 +86,5 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 		# assume equal_obj follows the old requirement for equalise_obj
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
-	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, solver.skiprefinement, solver.maxfcall)
+	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, skiprefinement, solver.maxfcall)
 end
