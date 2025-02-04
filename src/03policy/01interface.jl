@@ -17,8 +17,8 @@ function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cd
 		@debug("refining")
 		time_refine = @elapsed refine!(cdcp)
 		cdcp.state = success
+		concat!(cdcp)
 	end
-	concat!(cdcp)
 	return (time_squeeze, time_refine)
 end
 
