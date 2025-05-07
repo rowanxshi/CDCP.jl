@@ -2,14 +2,17 @@ function solve!(cdcp::CDCProblem{<:Squeezing}; restart::Bool=false, scdca=cdcp.s
 	restart && (cdcp = reinit!(cdcp; scdca, z))
 	@debug "squeezing"
 	cdcp.x, cdcp.value, cdcp.state = squeeze!(cdcp, cdcp.x)
-	(cdcp.state != success) && (@debug("branching"); branch!(cdcp))
+	if (cdcp.state != success) && cdcp.solver.branch
+		@debug("branching")
+		branch!(cdcp)
+	end
 	return cdcp
 end
 
-function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, kwargs...)
+function init_solverx(::Type{<:Squeezing}, obj, scdca::Bool; z=nothing, branch = true, kwargs...)
 	itemstates = allundetermined(obj)
 	V = typeof(itemstates)
-	return Squeezing(scdca, V[], z), itemstates
+	return Squeezing(scdca, V[], z, branch), itemstates
 end
 
 function reinit!(cdcp::CDCProblem{<:Squeezing}; obj=cdcp.obj, fcall=true, solverkw...)
@@ -23,8 +26,8 @@ function reinit_solverx!(cdcp::CDCProblem{<:Squeezing}; solverkw...)
 	cdcp.solver = reinit!(cdcp.solver; solverkw...)
 	cdcp
 end
-function reinit!(solver::Squeezing; scdca=solver.scdca, z=solver.z)
-	solver = Squeezing(scdca, empty!(solver.branching), z)
+function reinit!(solver::Squeezing; scdca=solver.scdca, z=solver.z, branch=solver.branch)
+	solver = Squeezing(scdca, empty!(solver.branching), z, branch)
 end
 
 function next_undetermined(itemstates, i)
