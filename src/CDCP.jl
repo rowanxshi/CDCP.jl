@@ -45,4 +45,8 @@ include("04compat/00structs.jl")
 include("04compat/01interface.jl")
 include("04compat/02helpers.jl")
 
+function __init__()
+	"\n\tYou have updated to CDCP.jl version 1.\n\tIf something has broken, consider reverting back to CDCP.jl version 0." |> println
+end
+
 end
