@@ -1,1 +1,1 @@
-[Documentation](https://rowanxshi.github.io/CDCP.jl)
+[Documentation](https://rowanxshi.github.io/CDCP.jl/dev/)
