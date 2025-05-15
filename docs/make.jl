@@ -1,10 +1,12 @@
-using Documenter, CDCP
+using Documenter, CombinatorialDiscreteChoiceProblems
 
 makedocs(
 	sitename="Combinatorial Discrete Choice Problems",
-	pages= [
+	pages=[
 		"Introduction" => "index.md",
-		"Manual" => "manual.md"
+		"Manual" => "manual.md",
+		"Internals" => "internals.md",
+		"Backwards compatibility" => "compat.md",
 	]
 )
 

@@ -1,19 +1,52 @@
-"Solve CDCPs. Main functions provided are [`solve!`](@ref), [`solve`](@ref), and [`policy`](@ref). See [here](https://github.com/rowanxshi/CDCP.jl) for more."
+"""
+Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (2024).
+
+See also [`solve`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
+"""
 module CDCP
 
-include("helpers.jl")
+using Base: RefValue
 
-include("./single/helpers.jl")
-include("./single/squeezing.jl")
-include("./single/branching.jl")
-include("./single/solvers.jl")
+import StaticArrays
+using StaticArrays: SVector, setindex
 
-include("./policy/helpers.jl")
-include("./policy/squeezing.jl")
-include("./policy/branching.jl")
-include("./policy/brute.jl")
-include("./policy/solvers.jl")
+import CommonSolve: init, solve!, solve
 
-export solve!, solve, policy, policy!
+# CommonSolve
+export init, solve!, solve
+
+export Objective, margin, CDCProblem, CDCPSolver, SolverState, ItemState, undetermined, included, excluded, aux
+export Naive, Squeezing, Policy, SqueezingPolicy
+export policy, policy!
+
+# used for everything
+include("00global/00structs.jl")
+include("00global/01interface.jl")
+
+# naive solution with exhaustion
+include("01naive/00structs.jl")
+include("01naive/01interface.jl")
+include("01naive/02naive.jl")
+
+# single-agent solution
+include("02single/00structs.jl")
+include("02single/01interface.jl")
+include("02single/02squeeze.jl")
+include("02single/03branch.jl")
+
+# policy function solution
+include("03policy/00structs.jl")
+include("03policy/01interface.jl")
+include("03policy/02squeeze.jl")
+include("03policy/03refine.jl")
+
+# for backwards compatibility
+include("04compat/00structs.jl")
+include("04compat/01interface.jl")
+include("04compat/02helpers.jl")
+
+function __init__()
+	"\n\tYou have updated to CDCP.jl version 1.\n\tIf something has broken, consider reverting back to CDCP.jl version 0." |> println
+end
 
 end
