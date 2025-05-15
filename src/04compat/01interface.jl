@@ -19,10 +19,14 @@ Similar to [`naive`](@ref), but accepts a pre-allocated vector `J`.
 
     This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Naive, ...)`.
 """
-function naive!(J::AbstractVector{Bool}; obj)
+function naive!(J::AbstractVector{Bool}; obj, z = nothing)
 	Base.depwarn("Consider the new interface for solution with exhaustion using the problem with `Naive`", :naive!)
 	C = length(J)
-	wrapped_obj = Objective(obj, copy(J))
+	if isnothing(z)
+		wrapped_obj = Objective(obj, copy(J))
+	else
+		wrapped_obj = Objective(ℒ -> obj(ℒ, z), copy(J))
+	end
 	cdcp = solve(Naive, wrapped_obj, C)
 	copyto!(J, cdcp.x)
 end
@@ -38,9 +42,11 @@ The solver uses the objective function `obj(J)` which must accept as argument a 
 
     This method exists only for the sake of backward compatibility. Future use should prefer the interface based on `solve(Squeezing, ...)`.
 """
-function solve(C::Integer; scdca::Bool, obj)
+function solve(C::Integer; scdca::Bool, obj, kw...)
 	wrapped_obj = Objective(obj, SVector{C,Bool}(trues(C)))
-	return solve(Squeezing, wrapped_obj, scdca)
+	cdcp = solve(Squeezing, wrapped_obj, C, scdca)
+	@assert (cdcp.state == success) "CDCP did not solve successfully"
+	to_sub(cdcp.x)
 end
 """
     solve!((sub, sup, aux); scdca::Bool, obj, restart::Bool=true)

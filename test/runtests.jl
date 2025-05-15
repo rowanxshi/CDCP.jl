@@ -1,13 +1,11 @@
 using Test
-using CombinatorialDiscreteChoiceProblems
+using CDCP
 
 using Random
 using Roots
 using StaticArrays
 
-using CombinatorialDiscreteChoiceProblems: Equal_Obj, clearfcall, addfcall
-
-const CDCP = CombinatorialDiscreteChoiceProblems
+using CDCP: Equal_Obj, clearfcall, addfcall
 
 const tests = [
     "interface",

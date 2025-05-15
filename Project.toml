@@ -1,4 +1,4 @@
-name = "CombinatorialDiscreteChoiceProblems"
+name = "CDCP"
 uuid = "f258a71e-3c36-4605-b3c7-08d5611c0e1a"
 authors = ["Rowan <37481598+rowanxshi@users.noreply.github.com>"]
 version = "0.1.0"

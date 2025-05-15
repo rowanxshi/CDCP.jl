@@ -3,7 +3,7 @@ Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (20
 
 See also [`solve`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
 """
-module CombinatorialDiscreteChoiceProblems
+module CDCP
 
 using Base: RefValue
 
@@ -15,21 +15,9 @@ import CommonSolve: init, solve!, solve
 # CommonSolve
 export init, solve!, solve
 
-export Objective,
-       margin,
-       CDCProblem,
-       CDCPSolver,
-       SolverState,
-       ItemState,
-       undetermined,
-       included,
-       excluded,
-       aux,
-
-       Naive,
-       Squeezing,
-       Policy,
-       SqueezingPolicy
+export Objective, margin, CDCProblem, CDCPSolver, SolverState, ItemState, undetermined, included, excluded, aux
+export Naive, Squeezing, Policy, SqueezingPolicy
+export policy, policy!
 
 # used for everything
 include("00global/00structs.jl")

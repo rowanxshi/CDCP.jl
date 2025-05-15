@@ -1,9 +1,7 @@
 module CDCPRootsExt
 
 using Roots
-using CombinatorialDiscreteChoiceProblems
-
-const CDCP = CombinatorialDiscreteChoiceProblems
+using CDCP
 
 function (eo::CDCP.Equal_Obj{<:Roots.AbstractUnivariateZeroMethod})(
         obj1::CDCP.Objective, obj2::CDCP.Objective, zleft, zright)

@@ -66,8 +66,21 @@ function coincide(C::Int, scdca::Bool = false; seed::Int = 10)
 end
 
 @testset "wrapper" begin
-    for seed in 10:10:100
-        @test first(coincide(10, true, seed = seed))
-        @test first(coincide(10, false, seed = seed))
-    end
+	C = 2
+	cdcp = initiate(C)
+	containers = (falses(C), trues(C), falses(C))
+	@test CDCP.naive(C; cdcp[1].obj) isa AbstractVector{Bool}
+	@test CDCP.naive(C; cdcp[1].obj, z = 2.0) isa AbstractVector{Bool}
+	@test CDCP.naive!(falses(C); cdcp[1].obj) isa AbstractVector{Bool}
+	@test CDCP.naive!(falses(C); cdcp[1].obj, z = 2.0) isa AbstractVector{Bool}
+	@test solve(C; cdcp[1].scdca, cdcp[1].obj) isa AbstractVector{Bool}
+	@test solve!(containers; cdcp[1].scdca, cdcp[1].obj) isa AbstractVector{Bool}
+	cutoffs_strategies = policy(C; cdcp[1].scdca, cdcp[1].obj, cdcp[1].equalise_obj)
+	@test cutoffs_strategies isa Tuple{<: Any, <: Any}
+	@test cutoffs_strategies[1] isa AbstractVector{<: Real}
+	@test cutoffs_strategies[2] isa AbstractVector{<: Union{Nothing, <: AbstractVector{Bool}}}
+	for seed in 10:10:100
+		@test first(coincide(10, true, seed = seed))
+		@test first(coincide(10, false, seed = seed))
+	end
 end
