@@ -1,6 +1,6 @@
 # Combinatorial Discrete Choice Problems
 ```@docs
-CombinatorialDiscreteChoiceProblems
+CDCP
 ```
 ## Installation
 

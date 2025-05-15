@@ -1,4 +1,4 @@
-using Documenter, CombinatorialDiscreteChoiceProblems
+using Documenter, CDCP
 
 makedocs(
 	sitename="Combinatorial Discrete Choice Problems",
@@ -7,7 +7,8 @@ makedocs(
 		"Manual" => "manual.md",
 		"Internals" => "internals.md",
 		"Backwards compatibility" => "compat.md",
-	]
+	],
+	# remotes = nothing
 )
 
-deploydocs( repo = "github.com/rowanxshi/CDCP.jl.git")
+deploydocs(repo = "github.com/rowanxshi/CDCP.jl.git")

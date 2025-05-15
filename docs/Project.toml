@@ -1,3 +1,3 @@
 [deps]
-CombinatorialDiscreteChoiceProblems = "f258a71e-3c36-4605-b3c7-08d5611c0e1a"
+CDCP = "f258a71e-3c36-4605-b3c7-08d5611c0e1a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
