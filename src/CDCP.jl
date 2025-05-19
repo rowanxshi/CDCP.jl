@@ -1,5 +1,5 @@
 """
-Solve combinatorial discrete choice problems as in Arkolakis, Eckert and Shi (2024).
+Solve combinatorial discrete choice problems as in [Arkolakis, Eckert and Shi (2025)](https://rowanxshi.github.io/papers/cdc.pdf).
 
 See also [`solve`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
 """
