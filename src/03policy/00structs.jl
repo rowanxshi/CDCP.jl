@@ -23,7 +23,7 @@ Fields
 ===
 * `cutoffs::Vector{Z}`: cutoff types at which optimal decision set switches
 * `itemstates_s::Vector{V}`: a vector of decision sets, so that `itemstates_s[k]` corresponds to the types above `cutoffs[k]` and below `cutoffs[k+1]`
-* `zright::Z`: the 
+* `zright::Z`: the maximum type `z` (can be `Inf`).
 
 """
 struct Policy{Z,V <: AbstractVector{ItemState}} <: AbstractVector{IntervalChoice{Z,V}}

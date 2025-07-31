@@ -1,11 +1,11 @@
 """
-    solve(Algorithm::CDCPSolver, obj, args...; kwargs...) = cdcp::CDCProblem
+    solve(Algorithm::CDCPSolver, obj, S::Integer, args...; kwargs...) = cdcp::CDCProblem
 
-Solve a combinatorial discrete choice problem with a given solution algorithm that can be [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref). Results are returned as a [`CDCProblem`](@ref).
+Solve a combinatorial discrete choice problem over `S` possible items, using a given solution algorithm that can be [`SqueezingPolicy`](@ref), [`Squeezing`](@ref) or [`Naive`](@ref). Results are returned as a [`CDCProblem`](@ref). See the methods below.
 
 The objective function `obj` should return the value evaluated at a choice vector `ℒ` with an optional parameter `z` that is typically a number (e.g. productivity).
 
-`obj` must have a method of either `obj(ℒ)` (if no parameter is specified) or `obj(ℒ, z)` (if a parameter is specified). `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`.
+`obj` must have a method of either `obj(ℒ)` (if no parameter is specified) or `obj(ℒ, z)` (if a parameter is specified). `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector of length `S` with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`.
 
     solve(Squeezing, obj, scdca::Bool; z=nothing)
 
@@ -16,7 +16,7 @@ Keywords
 * `z=nothing`
 
 
-    solve(SqueezingPolicy, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
+    solve(SqueezingPolicy, obj, S::Integer, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); kwargs...)
 
 The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`.
 
@@ -37,7 +37,7 @@ Keywords
 * `maxfcall=1_000_000_000`: maximum calls to the objective function
 
 
-    solve(Naive, obj; kwargs...)
+    solve(Naive, obj, S::Integer; kwargs...)
 
 Solve with exhaustion by checking all potential decision sets. This method should be used with extreme caution.
 
