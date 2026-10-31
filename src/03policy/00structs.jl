@@ -65,36 +65,36 @@ struct Default_Zero_Margin{F, O, D <: AbstractDict}
 	memo::D
 end
 function Default_Zero_Margin(equal_obj, obj2::Objective{<: Any, V}, ::Z) where {V, Z <: Real}
-	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,typeof(memokey(obj2.ℒ))},Z}())
-end
-# A decision set as a tuple of 64-bit words: much cheaper to hash than C Bools.
-memokey(ℒ) = ℒ
-@generated function memokey(ℒ::SVector{C,Bool}) where C
-	K = cld(C, 64)
-	words = map(1:K) do k
-		word = :(zero(UInt64))
-		for j in 1:min(64, C - 64(k-1)) # nested two-argument ors: a 64-argument | is slow and allocates
-			word = :($word | (UInt64(ℒ[$(64(k-1)+j)]) << $(j-1)))
-		end
-		word
-	end
-	Expr(:tuple, words...)
+	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,typeof(packℒ(obj2.ℒ))},Z}())
 end
 function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	# the order of true and false matters in case there is no interior solution
-	key = (i, memokey(obj.ℒ))
+	key = (i, packℒ(obj.ℒ))
 	z = get(zm.memo, key, nothing)
 	if isnothing(z)
 		obj = setindex(obj, true, i)
 		obj2 = setindex(ℒ!(zm.obj2, obj.ℒ), false, i)
-		znew, obj = zm.equal_obj(obj, obj2, zleft, zright)
-		z = convert(valtype(zm.memo), znew)
+		z, obj = zm.equal_obj(obj, obj2, zleft, zright)
 		zm.memo[key] = z
 	end
 	z, obj
 end
 function reinit!(zm::Default_Zero_Margin)
 	empty!(zm.memo)
+end
+function packℒ(ℒ::AbstractVector{Bool})
+	BitVector(ℒ).chunks
+end
+@generated function packℒ(ℒ::SVector{C,Bool}) where C
+	len = cld(C, 64)
+	words = map(1:len) do k
+		word = :(zero(UInt64))
+		for j in 1:min(64, C - 64(k-1))
+			word = :($word | (UInt64(ℒ[$(64(k-1)+j)]) << $(j-1)))
+		end
+		word
+	end
+	Expr(:tuple, words...)
 end
 
 function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V<:SVector
