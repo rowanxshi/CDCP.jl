@@ -59,11 +59,29 @@ function (d::DiffObj)(z, fcall::RefValue)
 	(value2 - value1)
 end
 
+"""
+	struct Default_Zero_Margin{F, O, D <: AbstractDict}
+
+A type that acts as a _memoised_ function
+
+	`(::Default_Zero_Margin)(obj::Objective, i, x...)`
+
+which uses `equal_obj` to calculate the type at which the marginal value of `i` in `obj.ℒ` is zero. Solver constructs and uses this type for `SqueezingPolicy.zero_margin` unless user supplies one; to avoid memoisation, supply `SqueezingPolicy.zero_margin`.
+
+See also [`SqueezingPolicy`](@ref).
+
+Fields
+===
+* `equal_obj::F`
+* `obj2::O`
+* `memo::D`
+"""
 struct Default_Zero_Margin{F, O, D <: AbstractDict}
 	equal_obj::F
 	obj2::O
 	memo::D
 end
+
 function Default_Zero_Margin(equal_obj, obj2::Objective{<: Any, V}, ::Z) where {V, Z <: Real}
 	Default_Zero_Margin(equal_obj, obj2, Dict{Tuple{Int,typeof(packℒ(obj2.ℒ))},Z}())
 end
