@@ -44,6 +44,7 @@ Solve with exhaustion by checking all potential decision sets. This method shoul
 Keywords
 ===
 * `z=nothing`: the type parameterising the problem
+* `incremental=nothing`: a `NamedTuple` `(; start, flip)` for objectives that can be updated when one item changes, in place of calling `obj` for every decision set: `start(z)` returns the value of the empty decision set and `flip(ℓ, included, z)` returns the value after item `ℓ` is added (`included == true`) or removed. The functions keep their own state, so a problem solved in parallel needs its own pair for each thread.
 """
 function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolver
 	solve!(init(Algorithm, args...; kwargs...))
