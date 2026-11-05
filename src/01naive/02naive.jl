@@ -9,25 +9,26 @@ function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
 	for ℓ in 1:S
 		obj = setindex(obj, isodd(gray >> (ℓ - 1)), ℓ)
 	end
+	best = cdcp.value
 	value, obj = firstvalue(incremental, obj, z)
-	cdcp = improve!(cdcp, value, obj)
+	if value > best
+		best = value
+		cdcp.value = value
+		cdcp.x .= obj.ℒ
+	end
 	for k in (ids[1] + 1):(2^S - 1)
 		ℓ = trailing_zeros(k) + 1
 		obj = setindex(obj, !obj.ℒ[ℓ], ℓ)
 		value, obj = nextvalue(incremental, obj, ℓ, z)
-		cdcp = improve!(cdcp, value, obj)
+		if value > best
+			best = value
+			cdcp.value = value
+			cdcp.x .= obj.ℒ
+		end
 		ids[1] = k
 	end
 	cdcp.obj = obj
 	return cdcp
-end
-
-function improve!(cdcp, value, obj)
-	if value > cdcp.value
-		cdcp.value = value
-		cdcp.x .= obj.ℒ
-	end
-	cdcp
 end
 
 firstvalue(::Nothing, obj, z) = obj(z)
