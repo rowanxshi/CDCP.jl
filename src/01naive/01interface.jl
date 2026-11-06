@@ -1,11 +1,5 @@
-function init_solverx(::Type{Naive}, obj; z=nothing, kwargs...)
-	solver = Naive([0], z)
+function init_solverx(::Type{Naive}, obj; z=nothing, incremental=nothing, kwargs...)
+	solver = Naive([0], z, incremental)
 	x = copy(obj.ℒ)
 	solver, x
-end
-
-function setℒ(obj::Objective{<:Any,<:AbstractVector{Bool}}, ids::Vector{Int})
-	fill!(obj.ℒ, false)
-	fill!(view(obj.ℒ, ids), true)
-	obj
 end
