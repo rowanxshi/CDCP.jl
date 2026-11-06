@@ -24,7 +24,7 @@ end
 
 function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), skiprefinement::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
-	obj2 = copyℒ(obj)
+	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall)
 	# harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...) # TODO: MOVE TO COMPAT SECTION
 		# assume equal_obj follows the old requirement for equalise_obj
@@ -70,7 +70,7 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
-	obj2 = copyℒ(obj)
+	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall)
 	zmin = first(zbounds)
 	reinit!(solver.singlecdcp; obj, fcall, scdca)
 	# harmonize user defined functions
@@ -88,5 +88,3 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 	end
 	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, skiprefinement, solver.maxfcall)
 end
-
-copyℒ(obj::Objective) = Objective(obj.f, copy(obj.ℒ), obj.fcall)
