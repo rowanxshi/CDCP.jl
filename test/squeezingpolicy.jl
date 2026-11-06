@@ -146,3 +146,15 @@ end
 	solve!(p; restart=true, obj=obj, scdca=true)
 	@test p.x == policy0
 end
+
+@testset "SqueezingPolicy shares the objective function" begin
+	f = TestObj(1.5, 10, v)
+	obj = Objective(f, SVector{10,Bool}(trues(10)))
+	p = init(SqueezingPolicy, obj, 10, false, equal_obj, (-Inf, Inf))
+	@test p.solver.obj2.f === f
+	solve!(p)
+	x = deepcopy(p.x)
+	solve!(p; restart = true)
+	@test p.solver.obj2.f === f
+	@test p.x == x
+end

@@ -24,7 +24,7 @@ The function `equal_obj` should returns the cutoff type `z` with `zleft <= z0 <=
 
 `equal_obj` can be defined with one of the two following methods:
 * `equal_obj((ℒ1, ℒ2), zleft, zright)`: where the pair of input choices is accepted as a tuple
-* `equal_obj(obj1::Objective, obj2::Objective, zleft, zright)`: where `obj1` and `obj2` are the same objective function attached with different input vectors `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively
+* `equal_obj(obj1::Objective, obj2::Objective, zleft, zright)`: where `obj1` and `obj2` are the same objective function attached with different input vectors `obj1.ℒ` and `obj2.ℒ` that correspond to `ℒ1` and `ℒ2` respectively. The two share one function object, so a function that keeps state must not assume consecutive calls come from the same input vector
 
 `zbounds` determines the domain of the parameter `z`, which defaults to `(-Inf, Inf)`.
 
