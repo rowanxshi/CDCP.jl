@@ -1,5 +1,6 @@
-function init_solverx(::Type{Naive}, obj; z=nothing, incremental=nothing, kwargs...)
-	solver = Naive([0], z, incremental)
-	x = copy(obj.ℒ)
-	solver, x
+function init_solverx(::Type{Naive}, obj; z=nothing, kwargs...)
+	init_solverx(Naive([0], z), obj)
+end
+function init_solverx(solver::Naive, obj; z=solver.z, kwargs...)
+	Naive(solver.ids, z, solver.incremental), copy(obj.ℒ)
 end
