@@ -29,7 +29,7 @@ end
     total = Ref(0.0)
     start(z) = (total[] = 0.0)
     flip(ℓ, included, z) = (total[] += (included ? 1 : -1)*(z*v[ℓ] - 0.3))
-    fast = solve(Naive(; start, flip), Objective(f, fill(false, 10)), 10; z)
+    fast = solve(Naive, Objective(f, fill(false, 10)), 10; z, incremental=(; start, flip))
     @test fast.obj.fcall == 2^10
     @test fast.value ≈ plain.value
     @test fast.x == plain.x

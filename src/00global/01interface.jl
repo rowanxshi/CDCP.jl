@@ -44,14 +44,15 @@ Solve with exhaustion by checking all potential decision sets. This method shoul
 Keywords
 ===
 * `z=nothing`: the type parameterising the problem
+* `incremental=nothing`: a `NamedTuple` `(; start, flip)` for objectives that can be updated when one item changes, in place of calling `obj` for every decision set: `start(z)` returns the value of the empty decision set and `flip(ℓ, included, z)` returns the value after item `ℓ` is added (`included == true`) or removed. The functions keep their own state, so a problem solved in parallel needs its own pair for each thread.
 """
-function solve(algorithm::Union{Type{<:CDCPSolver},CDCPSolver}, args...; kwargs...)
-	solve!(init(algorithm, args...; kwargs...))
+function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolver
+	solve!(init(Algorithm, args...; kwargs...))
 end
 
-function init(algorithm::Union{Type{<:CDCPSolver},CDCPSolver}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...)
+function init(::Type{Algorithm}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...) where Algorithm <: CDCPSolver
 	obj = init_Objective(obj, S)
-	solver, x = init_solverx(algorithm, obj, args...; kwargs...)
+	solver, x = init_solverx(Algorithm, obj, args...; kwargs...)
 	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
 function reinit!(cdcp::CDCProblem, S; obj=cdcp.obj, fcall=true)
