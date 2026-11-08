@@ -1,17 +1,7 @@
-function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
+function naive!(cdcp)
 	(; obj) = cdcp
-	(; ids, z, incremental) = cdcp.solver
 	S = length(cdcp.x)
-	S < Sys.WORD_SIZE - 1 || throw(ArgumentError("exhaustion over $S items is not feasible"))
-	if restart
-		resize!(ids, 1)
-		ids[1] = 0
-	else
-		startingset = ids[1] ⊻ (ids[1] >> 1)
-		for ℓ in 1:S
-			obj = setindex(obj, isodd(startingset >> (ℓ - 1)), ℓ)
-		end
-	end
+	(; ids, z, incremental) = cdcp.solver
 	value, obj = firstvalue(incremental, obj, z)
 	if value > cdcp.value
 		cdcp.value = value
