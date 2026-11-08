@@ -33,4 +33,9 @@ end
     @test fast.obj.fcall == 2^10
     @test fast.value ≈ plain.value
     @test fast.x == plain.x
+
+    plain.solver = Naive(plain.solver.ids, 0.1)
+    solve!(plain)
+    @test plain.value ≈ 0.0
+    @test !any(plain.x)
 end

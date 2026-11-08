@@ -6,6 +6,7 @@ function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true)
 	if restart
 		resize!(ids, 1)
 		ids[1] = 0
+		cdcp.value = convert(typeof(cdcp.value), -Inf)
 	else
 		startingset = ids[1] ⊻ (ids[1] >> 1)
 		for ℓ in 1:S
