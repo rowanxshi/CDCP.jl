@@ -17,3 +17,20 @@ const v = [0.24952817563772145, 0.30744184685956255, 0.16527154238546204,
     @test (p.x .!= excluded) == p0.x
     @test p.value == p0.value
 end
+
+@testset "Naive incremental" begin
+    f(ℒ, z) = z*sum(v[ℒ]; init=0.0) - 0.3*count(ℒ)
+    z = 1.2
+    plain = solve(Naive, Objective(f, fill(false, 10)), 10; z)
+    @test plain.obj.fcall == 2^10
+    @test plain.value ≈ maximum(sum(max(z*vℓ - 0.3, 0.0) for vℓ in v))
+    @test plain.x == (z .* v .> 0.3)
+
+    total = Ref(0.0)
+    start(z) = (total[] = 0.0)
+    flip(ℓ, included, z) = (total[] += (included ? 1 : -1)*(z*v[ℓ] - 0.3))
+    fast = solve(Naive, Objective(f, fill(false, 10)), 10; z, incremental=(; start, flip))
+    @test fast.obj.fcall == 2^10
+    @test fast.value ≈ plain.value
+    @test fast.x == plain.x
+end

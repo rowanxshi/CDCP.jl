@@ -44,6 +44,9 @@ Solve with exhaustion by checking all potential decision sets. This method shoul
 Keywords
 ===
 * `z=nothing`: the type parameterising the problem
+* `incremental=nothing`: enables an optional speedup if `increment` has the following functions, which should keep their own state:
+	* `increment.start(z)`: should return the value of the empty decision set
+	* `increment.flip(ℓ, included, z)`: should return the value after `ℓ` is added (`included==true`) or removed (`included==false`)
 """
 function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolver
 	solve!(init(Algorithm, args...; kwargs...))
