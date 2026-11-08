@@ -25,7 +25,6 @@ function reinit!(cdcp::CDCProblem{<:Naive}; obj=cdcp.obj, fcall=true, solverkw..
 	return cdcp
 end
 function reinit_solverx!(cdcp::CDCProblem{<:Naive}; solverkw...)
-	cdcp.x = allundetermined!(cdcp.x)
 	cdcp.solver = reinit!(cdcp.solver; solverkw...)
 	cdcp
 end
