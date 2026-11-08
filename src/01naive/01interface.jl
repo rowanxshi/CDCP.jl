@@ -25,11 +25,19 @@ function reinit!(cdcp::CDCProblem{<:Naive}; obj=cdcp.obj, fcall=true, solverkw..
 	return cdcp
 end
 function reinit_solverx!(cdcp::CDCProblem{<:Naive}; solverkw...)
+	cdcp.x = falses!(cdcp.x)
 	cdcp.solver = reinit!(cdcp.solver; solverkw...)
 	cdcp
 end
+
 function reinit!(solver::Naive; ids=solver.ids, z=solver.z, incremental=solver.incremental)
 	resize!(solver.ids, 1)
 	solver.ids[1] = 0
 	solver = Naive(ids, z, incremental)
+end
+function falses!(v::SVector{S}) where S
+	SVector{S,Bool}(trues(S))
+end
+function falses!(v)
+	fill!(v, false)
 end
