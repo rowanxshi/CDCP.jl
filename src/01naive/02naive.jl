@@ -44,5 +44,9 @@ function firstvalue(incremental, obj, z)
 	value, addfcall(obj)
 end
 
-nextvalue(::Nothing, obj, ℓ, z) = obj(z)
-nextvalue(incremental, obj, ℓ, z) = incremental.flip(ℓ, obj.ℒ[ℓ], z), addfcall(obj)
+function nextvalue(::Nothing, obj, ℓ, z)
+	obj(z)
+end
+function nextvalue(incremental, obj, ℓ, z)
+	incremental.flip(ℓ, obj.ℒ[ℓ], z), addfcall(obj)
+end
