@@ -1,11 +1,11 @@
 function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 	(; solver) = cdcp
-	(; squeezing_indices, branching_indices) = solver
+	(; squeezing_indices, branching_indices, lastitemchecked) = solver
 	while !isempty(squeezing_indices)
 		k = pop!(squeezing_indices)
 		intervalchoice = solver.intervalchoices[k]
 		(intervalchoice.zleft == intervalchoice.zright) && continue
-		i = next_undetermined(intervalchoice.itemstates)
+		i = next_undetermined(intervalchoice.itemstates, lastitemchecked[k])
 		if isnothing(i)
 			isnothing(findfirst(==(aux), intervalchoice.itemstates)) || push!(branching_indices, k)
 		else
@@ -15,9 +15,11 @@ function squeeze!(cdcp::CDCProblem{<:SqueezingPolicy})
 			end
 			intervalchoices = squeeze(cdcp, intervalchoice, i)
 			solver.intervalchoices[k] = intervalchoices[1]
+			lastitemchecked[k] = i
 			push!(squeezing_indices, k)
 			for j in 2:length(intervalchoices)
 				push!(solver.intervalchoices, intervalchoices[j])
+				push!(lastitemchecked, i)
 				push!(squeezing_indices, length(solver.intervalchoices))
 			end
 		end
