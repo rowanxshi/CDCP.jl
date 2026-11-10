@@ -37,9 +37,10 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	end
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
+	lastitemchecked = zeros(Int, length(intervalchoices))
 	V = eltype(policy0.itemstates_s)
 	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
-	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall), policy0
+	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall, lastitemchecked), policy0
 end
 
 function reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, solverkw...)
@@ -67,6 +68,8 @@ end
 function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=false, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca, skiprefinement=solver.skiprefinement) where {T<:SqueezingPolicy}
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = intervalchoice
+	resize!(solver.lastitemchecked, 1)
+	solver.lastitemchecked[1] = 0
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
@@ -86,5 +89,5 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 		# assume equal_obj follows the old requirement for equalise_obj
 		equal_obj = Wrapped_Equalise_Obj(equal_obj)
 	end
-	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, skiprefinement, solver.maxfcall)
+	solver = SqueezingPolicy(scdca, solver.intervalchoices, solver.squeezing_indices, solver.branching_indices, zero_margin, equal_obj, solver.singlecdcp, obj2, skiprefinement, solver.maxfcall, solver.lastitemchecked)
 end

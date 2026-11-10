@@ -141,6 +141,7 @@ Fields
 * `obj2::O`
 * `skiprefinement::Bool`
 * `maxfcall::Int`
+* `lastitemchecked::Vector{Int}`
 """
 struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	scdca::Bool
@@ -153,4 +154,5 @@ struct SqueezingPolicy{Z,V<:AbstractVector{ItemState},F1,F2,S,O} <: CDCPSolver
 	obj2::O
 	skiprefinement::Bool
 	maxfcall::Int
+	lastitemchecked::Vector{Int}
 end
