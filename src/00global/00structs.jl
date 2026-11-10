@@ -8,7 +8,7 @@ See also [`Naive`](@ref), [`Squeezing`](@ref), [`SqueezingPolicy`](@ref).
 abstract type CDCPSolver end
 
 """
-    Objective{F,V <: AbstractVector}
+    Objective{F,V <: AbstractVector, D <: Union{Nothing, AbstractDict}}
 
 A wrapped objective function for solving a [`CDCProblem`](@ref). This facilitates maintaining an internal interface for dealing with objective functions that is independent from user interface.
 
@@ -19,25 +19,33 @@ Fields
 * `f::F`: objective function
 * `ℒ::V`: the decision vector at which to evaluate the objective function
 * `fcall::Int = 0`: the number of times the objective has been called, used to track whether the maximum number of objective calls has been reached (see also [`CDCProblem`](@ref))
+* `memo::D`: optional memoisation; either `nothing`, for no memoisation, or a `AbstractDict` to store previous values
 """
-struct Objective{F,V <: AbstractVector}
+struct Objective{F,V <: AbstractVector, D <: Union{Nothing, AbstractDict}}
 	f::F
 	ℒ::V
 	fcall::Int
-	function Objective(f::F, ℒ::V, fcall::Int = 0) where {F, V}
-		new{F, V}(f, ℒ, fcall)
+	memo::D
+	function Objective(f::F, ℒ::V, fcall::Int, memo::D = nothing) where {F, V, D}
+		new{F, V, D}(f, ℒ, fcall, memo)
 	end
+end
+function Objective(f, ℒ, memo::Union{Nothing, AbstractDict})
+	Objective(f, ℒ, 0, memo)
+end
+function Objective(f, ℒ)
+	Objective(f, ℒ, 0)
 end
 
 function setℒ(obj::Objective{<:Any,V}, ℒ::V) where V
-	Objective(obj.f, ℒ, obj.fcall)
+	Objective(obj.f, ℒ, obj.fcall, obj.memo)
 end
 
 function StaticArrays.setindex(obj::Objective{<:Any,<:SVector}, value, index)
-	Objective(obj.f, setindex(obj.ℒ, value, index), obj.fcall)
+	Objective(obj.f, setindex(obj.ℒ, value, index), obj.fcall, obj.memo)
 end
 function StaticArrays.setindex(obj::Objective, value, index) # fallback method assumes ℒ is mutable
-	Objective(obj.f, setindex!(obj.ℒ, value, index), obj.fcall)
+	Objective(obj.f, setindex!(obj.ℒ, value, index), obj.fcall, obj.memo)
 end
 
 function init_Objective(obj::Objective, S::Integer)
@@ -52,6 +60,12 @@ function init_Objective(obj, S::Integer)
 	ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
 	Objective(obj, ℒ)
 end
+function init_Objective(obj, S::Integer, (ztype, valuetype)::NTuple{2, Type})
+	obj = init_Objective(obj, S)
+	memokeytype = Tuple{Union{Nothing, ztype}, typeof(packℒ(obj.ℒ))}
+	memo = Dict{memokeytype, valuetype}()
+	Objective(obj.f, obj.ℒ, obj.fcall, memo)
+end
 
 # default threshold for determining whether SVector is used for a choice
 function static_threshold()
@@ -59,14 +73,36 @@ function static_threshold()
 end
 
 function addfcall(obj::Objective, n=1)
-	Objective(obj.f, obj.ℒ, obj.fcall+n)
+	Objective(obj.f, obj.ℒ, obj.fcall+n, obj.memo)
 end
 function clearfcall(obj::Objective)
-	Objective(obj.f, obj.ℒ, 0)
+	Objective(obj.f, obj.ℒ, 0, obj.memo)
 end
 
+function (obj::Objective{<: Any, <: AbstractVector, <: AbstractDict})(z)
+	key = (z, packℒ(obj.ℒ))
+	nfcall = 0
+	value = get(obj.memo, key, nothing)
+	if isnothing(value)
+		value = obj.f(obj.ℒ, z)
+		nfcall = 1
+		obj.memo[key] = value
+	end
+	value, addfcall(obj, nfcall)
+end
 function (obj::Objective)(z)
 	obj.f(obj.ℒ, z), addfcall(obj)
+end
+function (obj::Objective{<: Any, <: AbstractVector, <: AbstractDict})(::Nothing)
+	key = (nothing, packℒ(obj.ℒ))
+	nfcall = 0
+	value = get(obj.memo, key, nothing)
+	if isnothing(value)
+		value = obj.f(obj.ℒ)
+		nfcall = 1
+		obj.memo[key] = value
+	end
+	value, addfcall(obj, nfcall)
 end
 function (obj::Objective)(::Nothing)
 	obj.f(obj.ℒ), addfcall(obj)

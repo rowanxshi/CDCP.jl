@@ -62,7 +62,7 @@ end
 """
 	struct Default_Zero_Margin{F, O, D <: AbstractDict}
 
-A type that acts as a _memoised_ function
+A type that acts as the _memoised_ function:
 
 	`(::Default_Zero_Margin)(obj::Objective, i, x...)`
 
@@ -97,8 +97,8 @@ function (zm::Default_Zero_Margin)(obj::Objective, i, zleft, zright)
 	end
 	z, obj
 end
-function reinit!(zm::Default_Zero_Margin)
-	empty!(zm.memo)
+function reinit!(zm::Default_Zero_Margin; memo = true)
+	memo && empty!(zm.memo)
 end
 function packℒ(ℒ::AbstractVector{Bool})
 	BitVector(ℒ).chunks
@@ -116,10 +116,10 @@ end
 end
 
 function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V<:SVector
-	Objective(obj.f, ℒ, obj.fcall)
+	Objective(obj.f, ℒ, obj.fcall, obj.memo)
 end
 function ℒ!(obj::Objective{<:Any, V}, ℒ::V) where V
-	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall)
+	Objective(obj.f, copyto!(obj.ℒ, ℒ), obj.fcall, obj.memo)
 end
 
 """

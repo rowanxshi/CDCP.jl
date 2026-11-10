@@ -12,7 +12,7 @@ const v = [0.24952817563772145, 0.30744184685956255, 0.16527154238546204,
     obj = Objective(f, SVector{10,Bool}(trues(10)))
     p = init(Squeezing, obj, 10, true)
     @time solve!(p)
-    @test 100 < p.obj.fcall < 200
+    @test 50 < p.obj.fcall < 200
     @test (p.x .== included) == p0.x
     @test (p.x .!= excluded) == p0.x
     @test p.value == p0.value

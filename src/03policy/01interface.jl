@@ -1,5 +1,5 @@
-function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca, refinementonly=false)
-	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca))
+function solve!(cdcp::CDCProblem{<:SqueezingPolicy}; restart::Bool=false, obj=cdcp.obj, zero_margin=cdcp.solver.zero_margin, equal_obj=cdcp.solver.equal_obj, scdca=cdcp.solver.scdca, refinementonly=false, reinit_kw...)
+	restart && (cdcp = reinit!(cdcp; obj, zero_margin, equal_obj, scdca, reinit_kw...))
 	time_squeeze = Inf
 	if refinementonly
 		append!(cdcp.solver.branching_indices, cdcp.solver.squeezing_indices)
@@ -24,7 +24,8 @@ end
 
 function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), skiprefinement::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
-	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall)
+	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall, obj.memo)
+	memo = !isnothing(obj.memo)
 	# harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...) # TODO: MOVE TO COMPAT SECTION
 		# assume equal_obj follows the old requirement for equalise_obj
@@ -39,22 +40,21 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
 	lastitemchecked = zeros(Int, length(intervalchoices))
 	V = eltype(policy0.itemstates_s)
-	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
+	singlecdcp = init(Squeezing, obj, S, scdca; memo, z=zero(Z), singlekw...)
 	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall, lastitemchecked), policy0
 end
 
-function reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, solverkw...)
+function reinit!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, memo=true, solverkw...)
 	S = length(cdcp.x.itemstates_s[1])
-	cdcp = reinit!(cdcp, S; obj, fcall)
-	cdcp.obj = reinit!(obj, S)
-	cdcp = reinit_solverx!(cdcp; obj, solverkw...)
+	cdcp = reinit!(cdcp, S; obj, fcall, memo)
+	cdcp = reinit_solverx!(cdcp; obj, fcall, memo, solverkw...)
 	return cdcp
 end
 
-function reinit_solverx!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, solverkw...)
+function reinit_solverx!(cdcp::CDCProblem{<:SqueezingPolicy}; obj=cdcp.obj, fcall=true, memo=true, solverkw...)
 	cdcp.x = reinit!(cdcp.x, obj)
 	zbounds = (cdcp.x.cutoffs[1], cdcp.x.zright)
-	cdcp.solver = reinit!(cdcp.solver, cdcp.x[1], zbounds; obj, fcall, solverkw...)
+	cdcp.solver = reinit!(cdcp.solver, cdcp.x[1], zbounds; obj, fcall, memo, solverkw...)
 	cdcp
 end
 function reinit!(policy::Policy, obj)
@@ -65,7 +65,7 @@ function reinit!(policy::Policy, obj)
 	policy.itemstates_s[1] = allundetermined(obj)
 	policy
 end
-function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=false, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca, skiprefinement=solver.skiprefinement) where {T<:SqueezingPolicy}
+function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=true, memo=true, zero_margin=solver.zero_margin, equal_obj=solver.equal_obj, scdca=solver.scdca, skiprefinement=solver.skiprefinement) where {T<:SqueezingPolicy}
 	resize!(solver.intervalchoices, 1)
 	solver.intervalchoices[1] = intervalchoice
 	resize!(solver.lastitemchecked, 1)
@@ -73,9 +73,9 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
-	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall)
+	obj2 = Objective(solver.obj2.f, copy(solver.obj2.ℒ), solver.obj2.fcall, solver.obj2.memo)
 	zmin = first(zbounds)
-	reinit!(solver.singlecdcp; obj, fcall, scdca)
+	reinit!(solver.singlecdcp; obj, fcall, memo, scdca)
 	# harmonize user defined functions
 	if isnothing(zero_margin)
 		zero_margin = Default_Zero_Margin(equal_obj, obj2, zmin)
@@ -83,7 +83,7 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 		@warn "Consider adapting `zero_margin` to the new method"
 		zero_margin = Wrapped_Zero_D_j_Obj(zero_margin, fill(false, S))
 	elseif zero_margin isa Default_Zero_Margin
-		reinit!(zero_margin)
+		reinit!(zero_margin; memo)
 	end
 	if !applicable(equal_obj, obj, obj2, zbounds...)
 		# assume equal_obj follows the old requirement for equalise_obj
