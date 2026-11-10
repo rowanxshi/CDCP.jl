@@ -48,17 +48,17 @@ function StaticArrays.setindex(obj::Objective, value, index) # fallback method a
 	Objective(obj.f, setindex!(obj.ℒ, value, index), obj.fcall, obj.memo)
 end
 
-function init_Objective(obj::Objective, S::Integer) # TODO: MEMO
+function init_Objective(obj::Objective, S::Integer)
 	S = Int(S)
 	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
 	(length(obj.ℒ) == S) || throw(ArgumentError("length of obj.ℒ is not $S"))
-	obj = clearfcall(obj) # TODO: MEMO
+	obj = clearfcall(obj)
 end
-function init_Objective(obj, S::Integer) # TODO: MEMO
+function init_Objective(obj, S::Integer)
 	S = Int(S)
 	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
 	ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
-	Objective(obj, ℒ, nothing) # TODO: MEMO
+	Objective(obj, ℒ, nothing)
 end
 function init_Objective(obj, S::Integer, (ztype, valuetype)::NTuple{2, Type})
 	obj = init_Objective(obj, S)
