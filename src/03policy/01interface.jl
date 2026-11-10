@@ -25,6 +25,7 @@ end
 function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zbounds::Tuple{Z,Z}=(-Inf, Inf); zero_margin=nothing, policy0::Policy=Policy(obj, zbounds), skiprefinement::Bool=false, singlekw=NamedTuple(), maxfcall=1_000_000_000, kwargs...) where Z
 	S = length(obj.ℒ)
 	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall, obj.memo)
+	memo = !isnothing(obj.memo)
 	# harmonize user defined functions
 	if !applicable(equal_obj, obj, obj2, zbounds...) # TODO: MOVE TO COMPAT SECTION
 		# assume equal_obj follows the old requirement for equalise_obj
@@ -38,7 +39,7 @@ function init_solverx(::Type{<:SqueezingPolicy}, obj, scdca::Bool, equal_obj, zb
 	end
 	intervalchoices = [policy0[i] for i in eachindex(policy0.itemstates_s)]
 	V = eltype(policy0.itemstates_s)
-	singlecdcp = init(Squeezing, obj, S, scdca; z=zero(Z), singlekw...)
+	singlecdcp = init(Squeezing, obj, S, scdca; memo, z=zero(Z), singlekw...)
 	return SqueezingPolicy(scdca, intervalchoices, collect(eachindex(intervalchoices)), Int[], zero_margin, equal_obj, singlecdcp, obj2, skiprefinement, maxfcall), policy0
 end
 

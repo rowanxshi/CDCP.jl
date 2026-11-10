@@ -134,16 +134,17 @@ end
 		@test p1.x == p.x.itemstates_s[k]
 	end
 
-	# Verify restart is working
+	# without memoising the objective: shouldn't
 	N = 20
 	f = TestObj(1.2, N, v1)
 	obj = Objective(f, SVector{N,Bool}(trues(N)))
-	p = init(SqueezingPolicy, obj, N, false, equal_obj, (-Inf, Inf); zero_margin)
+	p = init(SqueezingPolicy, obj, N, false, equal_obj, (-Inf, Inf); zero_margin, memo = false)
 	@time solve!(p);
 
+	# Verify restart is working
 	f = TestObj(0.5, N, v1)
 	obj = Objective(f, SVector{N,Bool}(trues(N)))
-	solve!(p; restart=true, obj=obj, scdca=true)
+	solve!(p; restart=true, obj=obj, scdca=true, memo=false)
 	@test p.x == policy0
 end
 
