@@ -1,7 +1,7 @@
-function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true, ids=cdcp.solver.ids, z=cdcp.solver.z, incremental=cdcp.solver.incremental)
+function solve!(cdcp::CDCProblem{<:Naive}; restart::Bool=true, ids=cdcp.solver.ids, z=cdcp.solver.z, incremental=cdcp.solver.incremental, reinit_kw...)
 	S = length(cdcp.x)
 	S < Sys.WORD_SIZE - 1 || throw(ArgumentError("exhaustion over $S items is not feasible"))
-	restart && reinit!(cdcp; ids, z, incremental)
+	restart && reinit!(cdcp; ids, z, incremental, reinit_kw...)
 	startingset = ids[1] ⊻ (ids[1] >> 1)
 	for ℓ in 1:S
 		cdcp.obj = setindex(cdcp.obj, isodd(startingset >> (ℓ - 1)), ℓ)
@@ -14,9 +14,9 @@ function init_solverx(::Type{Naive}, obj; z=nothing, incremental=nothing, kwargs
 	x = copy(obj.ℒ)
 	solver, x
 end
-function reinit!(cdcp::CDCProblem{<:Naive}; obj=cdcp.obj, fcall=true, solverkw...)
+function reinit!(cdcp::CDCProblem{<:Naive}; obj=cdcp.obj, fcall=true, memo=true, solverkw...)
 	S = length(cdcp.x)
-	cdcp = reinit!(cdcp, S; obj, fcall)
+	cdcp = reinit!(cdcp, S; obj, fcall, memo)
 	cdcp = reinit_solverx!(cdcp; solverkw...)
 	return cdcp
 end

@@ -7,6 +7,10 @@ The objective function `obj` should return the value evaluated at a choice vecto
 
 `obj` must have a method of either `obj(ℒ)` (if no parameter is specified) or `obj(ℒ, z)` (if a parameter is specified). `obj` must not restrict the specific type of `ℒ` but only assume `ℒ` is a vector of length `S` with element type being `Bool`. Specifically, `obj` must *not* try to modify the elements in `ℒ` when it is called. It should only read from `ℒ` with `getindex`.
 
+Keywords
+===
+* `memo=true`: whether or not to memoise objective function
+
     solve(Squeezing, obj, scdca::Bool; z=nothing)
 
 The problem should satisfy SCD-C from above if `scdca` is `true` and SCD-C from below if `scdca` is `false`.
@@ -52,23 +56,26 @@ function solve(::Type{Algorithm}, args...; kwargs...) where Algorithm<:CDCPSolve
 	solve!(init(Algorithm, args...; kwargs...))
 end
 
-function init(::Type{Algorithm}, obj, S::Integer, args...; valuetype::Type=Float64, kwargs...) where Algorithm <: CDCPSolver
-	obj = init_Objective(obj, S)
+function init(::Type{Algorithm}, obj, S::Integer, args...; memo=(Algorithm != Naive), ztype::Type=Float64, valuetype::Type=Float64, kwargs...) where Algorithm <: CDCPSolver
+	obj = memo ? init_Objective(obj, S, (ztype, valuetype)) : init_Objective(obj, S)
 	solver, x = init_solverx(Algorithm, obj, args...; kwargs...)
 	return CDCProblem{typeof(solver), typeof(obj), typeof(x), valuetype}(solver, obj, x, convert(valuetype,-Inf), inprogress)
 end
-function reinit!(cdcp::CDCProblem, S; obj=cdcp.obj, fcall=true)
+function reinit!(cdcp::CDCProblem, S; obj=cdcp.obj, fcall=true, memo=true)
 	cdcp.value = convert(typeof(cdcp.value), -Inf)
 	cdcp.state = inprogress
-	cdcp.obj = reinit!(obj, S; fcall)
+	cdcp.obj = reinit!(obj, S; fcall, memo)
 	cdcp
 end
-function reinit!(obj::Objective, S; fcall=true)
+function reinit!(obj::Objective, S; fcall=true, memo=true)
 	if obj isa Objective
 		fcall && (obj = clearfcall(obj))
 	else
 		ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
 		obj = Objective(obj, ℒ)
+	end
+	if memo && (obj.memo isa AbstractDict)
+		empty!(obj.memo)
 	end
 	obj
 end

@@ -28,7 +28,7 @@ function endpointsolutions(solver::SqueezingPolicy, intervalchoice::IntervalChoi
 	(itemstates_left, itemstates_right)
 end
 function solve!(cdcp::CDCProblem{<:Squeezing}, z, itemstates::AbstractVector{ItemState})
-	reinit!(cdcp; z, fcall=false)
+	reinit!(cdcp; z, fcall=false, memo=false)
 	cdcp.x = itemstates
 	solve!(cdcp)
 	(cdcp.state == success) || error("single-agent solver fails with z = ", cdcp.solver.z)
