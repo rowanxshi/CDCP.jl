@@ -58,7 +58,7 @@ function init_Objective(obj, S::Integer)
 	S = Int(S)
 	(S > 0) || throw(ArgumentError("the number of items S must be a positive integer"))
 	ℒ = (S < static_threshold()) ? SVector{S, Bool}(ntuple(i->false, S)) : Vector{Bool}(undef, S)
-	Objective(obj, ℒ, nothing)
+	Objective(obj, ℒ)
 end
 function init_Objective(obj, S::Integer, (ztype, valuetype)::NTuple{2, Type})
 	obj = init_Objective(obj, S)
