@@ -69,7 +69,7 @@ function reinit!(solver::T, intervalchoice::IntervalChoice, zbounds; obj, fcall=
 	resize!(solver.squeezing_indices, 1)
 	solver.squeezing_indices[1] = 1
 	empty!(solver.branching_indices)
-	obj2 = Objective(obj.f, copy(obj.ℒ), obj.fcall, obj.memo)
+	obj2 = Objective(solver.obj2.f, copy(solver.obj2.ℒ), solver.obj2.fcall, solver.obj2.memo)
 	zmin = first(zbounds)
 	reinit!(solver.singlecdcp; obj, fcall, memo, scdca)
 	# harmonize user defined functions
